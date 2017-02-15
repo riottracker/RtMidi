@@ -134,32 +134,9 @@ foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
    rtmidi_out_send_message :: Ptr () -> CString -> CInt -> IO CInt
 
 
-defaultInput :: IO Device
-defaultInput = fmap Input rtmidi_in_create_default
+apiSize :: IO Int
+apiSize = fromEnum <$> rtmidi_sizeof_rtmidi_api
 
-input :: Api -> String -> Int -> IO Device
-input api clientName queueSizeLimit = fmap Input $ withCString clientName $
-   \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit)
-
-
-defaultOutput :: IO Device
-defaultOutput = fmap Output rtmidi_out_create_default
-
-output :: Api -> String -> IO Device
-output api clientName = fmap Output $ withCString clientName $ rtmidi_out_create (toEnum (fromEnum api))
-
-
-portCount :: Device -> IO Int
-portCount d = fmap fromIntegral $ rtmidi_get_port_count $ device d
-
-portName :: Device -> Int -> IO String
-portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
-
-currentApi :: Device -> IO Api
-currentApi d = fmap (toEnum . fromEnum) $
-   case d of
-      Input x -> rtmidi_in_get_current_api x
-      Output x -> rtmidi_out_get_current_api x
 
 --compiledApis :: IO [Api]
 --compiledApis = fmap (map (toEnum . fromEnum)) $
@@ -170,4 +147,49 @@ currentApi d = fmap (toEnum . fromEnum) $
 --   putStrLn $ "n: " ++ show n ++ " a:" ++ show a
 --   peekArray (fromIntegral n) ptr
 
+
+-- TODO: rtmidi_error
+
+openPort :: Device -> Int -> String -> IO ()
+openPort d n name = withCString name $ rtmidi_open_port (device d) (toEnum n)
+
+openVirtualPort :: Device -> String -> IO ()
+openVirtualPort d name = withCString name $ rtmidi_open_virtual_port (device d)
+
+closePort :: Device -> IO ()
+closePort d = rtmidi_close_port $ device d
+
+portCount :: Device -> IO Int
+portCount d = fromIntegral <$> (rtmidi_get_port_count $ device d)
+
+portName :: Device -> Int -> IO String
+portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
+
+
+defaultInput :: IO Device
+defaultInput = Input <$> rtmidi_in_create_default
+
+input :: Api -> String -> Int -> IO Device
+input api clientName queueSizeLimit = Input <$>
+   (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
+
+-- TODO: rtmidi_in_free
+-- TODO: callbacks
+-- TODO: message filter
+-- TODO: rtmidi_in_get_message
+
+defaultOutput :: IO Device
+defaultOutput = Output <$> rtmidi_out_create_default
+
+output :: Api -> String -> IO Device
+output api clientName = Output <$> (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
+
+-- TODO: rtmidi_out_free
+-- TODO: rtmidi_out_send_message
+
+currentApi :: Device -> IO Api
+currentApi d = (toEnum . fromEnum) <$>
+   case d of
+      Input x -> rtmidi_in_get_current_api x
+      Output x -> rtmidi_out_get_current_api x
 
