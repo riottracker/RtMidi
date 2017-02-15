@@ -11,7 +11,6 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Sound.RtMidi
-  extensions:          ForeignFunctionInterface
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10
@@ -21,3 +20,7 @@ library
   c-sources:           rtmidi/RtMidi.cpp
                        rtmidi/rtmidi_c.cpp
   extra-libraries:     asound pthread stdc++
+
+executable example
+  main-is:             example.hs
+  build-depends:       RtMidi, base  
