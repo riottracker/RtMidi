@@ -10,11 +10,14 @@ module Sound.RtMidi (
     , portCount
     , portName
     , currentApi
+--    , compiledApis
     ) where
 
+import Control.Monad
 import Foreign
 import Foreign.C
 import Foreign.C.String
+
 
 data Device = Input (Ptr ()) | Output (Ptr ())
 
@@ -63,51 +66,108 @@ data ErrorType
   | ThreadError
   deriving (Eq, Show)
 
-foreign import ccall "rtmidi_c.h rtmidi_in_create_default"
-   rtmidi_in_create_default :: IO (Ptr ())
 
-defaultInput :: IO Device
-defaultInput = fmap Input rtmidi_in_create_default
+foreign import ccall "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
+   rtmidi_sizeof_rtmidi_api :: IO CInt
 
-foreign import ccall "rtmidi_c.h rtmidi_in_create"
-   rtmidi_in_create :: CInt -> CString -> CInt -> IO (Ptr ())
 
-input :: Api -> String -> Int -> IO Device
-input api clientName queueSizeLimit = fmap Input $ withCString clientName (\x -> rtmidi_in_create (toEnum (fromEnum api)) x (toEnum queueSizeLimit))
+foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
+   rtmidi_get_compiled_api :: (Ptr CInt) -> IO CInt
 
-foreign import ccall "rtmidi_c.h rtmidi_out_create_default"
-   rtmidi_out_create_default :: IO (Ptr ())
+foreign import ccall "rtmidi_c.h rtmidi_error"
+   rtmidi_error :: CInt -> CString -> IO ()
 
-defaultOutput :: IO Device
-defaultOutput = fmap Output rtmidi_out_create_default
 
-foreign import ccall "rtmidi_c.h rtmidi_out_create"
-   rtmidi_out_create :: CInt -> CString -> IO (Ptr ())
+foreign import ccall "rtmidi_c.h rtmidi_open_port"
+   rtmidi_open_port :: Ptr () -> CInt -> CString -> IO ()
 
-output :: Api -> String -> IO Device
-output api clientName = fmap Output $ withCString clientName (\x -> rtmidi_out_create (toEnum (fromEnum api)) x)
+foreign import ccall "rtmidi_c.h rtmidi_open_virtual_port"
+   rtmidi_open_virtual_port :: Ptr () -> CString -> IO ()
+
+foreign import ccall "rtmidi_c.h rtmidi_close_port"
+   rtmidi_close_port :: Ptr () -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_get_port_count"
    rtmidi_get_port_count :: Ptr () -> IO CInt
 
-portCount :: Device -> IO Int
-portCount d = fmap fromIntegral $ rtmidi_get_port_count $ device d
-
 foreign import ccall "rtmidi_c.h rtmidi_get_port_name"
    rtmidi_get_port_name :: Ptr () -> CInt -> IO CString
 
-portName :: Device -> Int -> IO String
-portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
+
+foreign import ccall "rtmidi_c.h rtmidi_in_create_default"
+   rtmidi_in_create_default :: IO (Ptr ())
+
+foreign import ccall "rtmidi_c.h rtmidi_in_create"
+   rtmidi_in_create :: CInt -> CString -> CInt -> IO (Ptr ())
+
+foreign import ccall "rtmidi_c.h rtmidi_in_free"
+   rtmidi_in_free :: Ptr () -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
    rtmidi_in_get_current_api :: Ptr () -> IO CInt
 
+foreign import ccall "rtmidi_c.h rtmidi_in_set_callback"
+   rtmidi_in_set_callback :: Ptr () -> Ptr () -> Ptr () -> IO ()
+
+foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
+   rtmidi_in_cancel_callback :: Ptr () -> IO ()
+
+foreign import ccall "rtmidi_c.h rtmidi_in_ignore_types"
+   rtmidi_in_ignore_types :: Ptr () -> Bool -> Bool -> Bool -> IO ()
+
+foreign import ccall "rtmidi_c.h rtmidi_in_get_message"
+   rtmidi_in_get_message :: Ptr () -> Ptr CString -> CSize -> IO CDouble
+
+foreign import ccall "rtmidi_c.h rtmidi_out_create_default"
+   rtmidi_out_create_default :: IO (Ptr ())
+
+foreign import ccall "rtmidi_c.h rtmidi_out_create"
+   rtmidi_out_create :: CInt -> CString -> IO (Ptr ())
+
+foreign import ccall "rtmidi_c.h rtmidi_out_free"
+   rtmidi_out_free :: Ptr () -> IO ()
+
 foreign import ccall "rtmidi_c.h rtmidi_out_get_current_api"
    rtmidi_out_get_current_api :: Ptr () -> IO CInt
 
+foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
+   rtmidi_out_send_message :: Ptr () -> CString -> CInt -> IO CInt
+
+
+defaultInput :: IO Device
+defaultInput = fmap Input rtmidi_in_create_default
+
+input :: Api -> String -> Int -> IO Device
+input api clientName queueSizeLimit = fmap Input $ withCString clientName $
+   \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit)
+
+
+defaultOutput :: IO Device
+defaultOutput = fmap Output rtmidi_out_create_default
+
+output :: Api -> String -> IO Device
+output api clientName = fmap Output $ withCString clientName $ rtmidi_out_create (toEnum (fromEnum api))
+
+
+portCount :: Device -> IO Int
+portCount d = fmap fromIntegral $ rtmidi_get_port_count $ device d
+
+portName :: Device -> Int -> IO String
+portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
+
 currentApi :: Device -> IO Api
 currentApi d = fmap (toEnum . fromEnum) $
-                  case d of
-                     Input x -> rtmidi_in_get_current_api x
-                     Output x -> rtmidi_out_get_current_api x
+   case d of
+      Input x -> rtmidi_in_get_current_api x
+      Output x -> rtmidi_out_get_current_api x
+
+--compiledApis :: IO [Api]
+--compiledApis = fmap (map (toEnum . fromEnum)) $
+--   alloca $ \ptr -> do
+--   n <- rtmidi_get_compiled_api nullPtr
+--   a <- rtmidi_get_compiled_api ptr
+--   case fromIntegral a of
+--   putStrLn $ "n: " ++ show n ++ " a:" ++ show a
+--   peekArray (fromIntegral n) ptr
+
 
