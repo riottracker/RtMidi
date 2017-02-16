@@ -3,14 +3,23 @@
 module Sound.RtMidi (
       Device(..)
     , Api(..)
-    , input
-    , defaultInput
-    , output
-    , defaultOutput
+    , apiSize
+    , compiledApis
+    , openPort
+    , openVirtualPort
+    , closePort
     , portCount
     , portName
+    , defaultInput
+    , input
+    , setCallback
+    , cancelCallback
+    , ignoreTypes
+    , getMessage
+    , defaultOutput
+    , output
+    , sendMessage
     , currentApi
-    , compiledApis
     ) where
 
 import Control.Monad
@@ -118,7 +127,7 @@ foreign import ccall "rtmidi_c.h rtmidi_in_ignore_types"
    rtmidi_in_ignore_types :: Ptr () -> Bool -> Bool -> Bool -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_in_get_message"
-   rtmidi_in_get_message :: Ptr () -> Ptr CString -> CSize -> IO CDouble
+   rtmidi_in_get_message :: Ptr () -> Ptr (Ptr CUChar) -> Ptr CSize -> IO CDouble
 
 foreign import ccall "rtmidi_c.h rtmidi_out_create_default"
    rtmidi_out_create_default :: IO (Ptr ())
@@ -146,11 +155,6 @@ compiledApis = fmap (map (toEnum . fromEnum)) $ do
    allocaArray n $ flip with $ \ptr -> do
       rtmidi_get_compiled_api ptr
       peekArray n =<< peek ptr
-
-quert :: CInt -> Ptr (Ptr CInt) -> IO [CInt]
-quert n ptr = do
-   a <- rtmidi_get_compiled_api ptr
-   peekArray (fromIntegral n) =<< peek ptr
 
 -- TODO: rtmidi_error
 
@@ -191,7 +195,13 @@ cancelCallback d = rtmidi_in_cancel_callback (toInput d)
 ignoreTypes :: Device -> Bool -> Bool -> Bool -> IO ()
 ignoreTypes d sysex time sense = rtmidi_in_ignore_types (toInput d) sysex time sense
 
--- TODO: rtmidi_in_get_message
+-- TODO: error handling
+getMessage :: Device -> IO ([CUChar], Double)
+getMessage d = alloca $ \m -> alloca $ \s -> do
+   timestamp <- rtmidi_in_get_message (toInput d) m s
+   size <- peek s
+   message <- peekArray (fromIntegral size) =<< peek m
+   return (message, toEnum $ fromEnum timestamp)
 
 defaultOutput :: IO Device
 defaultOutput = Output <$> rtmidi_out_create_default
