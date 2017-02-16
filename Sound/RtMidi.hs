@@ -10,7 +10,7 @@ module Sound.RtMidi (
     , portCount
     , portName
     , currentApi
---    , compiledApis
+    , compiledApis
     ) where
 
 import Control.Monad
@@ -46,15 +46,13 @@ instance Enum Api where
   fromEnum AlsaApi = 2
   fromEnum JackApi = 3
   fromEnum MultimediaApi = 4
-  fromEnum KernelStreamingApi = 5
-  fromEnum DummyApi = 6
+  fromEnum DummyApi = 5
   toEnum 0 = UnspecifiedApi
   toEnum 1 = CoreMidiApi
   toEnum 2 = AlsaApi
   toEnum 3 = JackApi
   toEnum 4 = MultimediaApi
-  toEnum 5 = KernelStreamingApi
-  toEnum 6 = DummyApi
+  toEnum 5 = DummyApi
 
 data ErrorType
   = Warning
@@ -76,7 +74,7 @@ foreign import ccall "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
 
 
 foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
-   rtmidi_get_compiled_api :: (Ptr CInt) -> IO CInt
+   rtmidi_get_compiled_api :: Ptr (Ptr CInt) -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_error"
    rtmidi_error :: CInt -> CString -> IO ()
@@ -141,16 +139,18 @@ foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
 apiSize :: IO Int
 apiSize = fromEnum <$> rtmidi_sizeof_rtmidi_api
 
+-- TODO: error handling
+compiledApis :: IO [Api]
+compiledApis = fmap (map (toEnum . fromEnum)) $ do
+   n <- fromIntegral <$> rtmidi_get_compiled_api nullPtr
+   allocaArray n $ flip with $ \ptr -> do
+      rtmidi_get_compiled_api ptr
+      peekArray n =<< peek ptr
 
---compiledApis :: IO [Api]
---compiledApis = fmap (map (toEnum . fromEnum)) $
---   alloca $ \ptr -> do
---   n <- rtmidi_get_compiled_api nullPtr
---   a <- rtmidi_get_compiled_api ptr
---   case fromIntegral a of
---   putStrLn $ "n: " ++ show n ++ " a:" ++ show a
---   peekArray (fromIntegral n) ptr
-
+quert :: CInt -> Ptr (Ptr CInt) -> IO [CInt]
+quert n ptr = do
+   a <- rtmidi_get_compiled_api ptr
+   peekArray (fromIntegral n) =<< peek ptr
 
 -- TODO: rtmidi_error
 
