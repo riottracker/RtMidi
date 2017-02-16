@@ -18,13 +18,22 @@ import Foreign
 import Foreign.C
 import Foreign.C.String
 
-
 data Device = Input (Ptr ()) | Output (Ptr ())
 
 device :: Device -> Ptr ()
 device d = case d of
              Input x -> x
              Output x -> x
+
+toInput :: Device -> Ptr ()
+toInput d = case d of
+              Input x -> x
+              _ -> error "illegal conversion"
+
+toOutput :: Device -> Ptr ()
+toOutput d = case d of
+              Output x -> x
+              _ -> error "illegal conversion"
 
 data Api
   = UnspecifiedApi
@@ -107,7 +116,7 @@ foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
    rtmidi_in_get_current_api :: Ptr () -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_in_set_callback"
-   rtmidi_in_set_callback :: Ptr () -> Ptr () -> Ptr () -> IO ()
+   rtmidi_in_set_callback :: Ptr () -> FunPtr (CDouble -> CString -> Ptr () -> IO()) -> Ptr () -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
    rtmidi_in_cancel_callback :: Ptr () -> IO ()
@@ -174,8 +183,19 @@ input api clientName queueSizeLimit = Input <$>
    (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
 
 -- TODO: rtmidi_in_free
--- TODO: callbacks
--- TODO: message filter
+
+foreign import ccall "wrapper"
+  wrap :: (CDouble -> CString -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> CString -> Ptr () -> IO ()))
+
+setCallback :: Device -> (CDouble -> CString -> Ptr () -> IO ()) -> Ptr () -> IO ()
+setCallback d c u = flip (rtmidi_in_set_callback (toInput d)) u =<< (wrap c)
+
+cancelCallback :: Device -> IO ()
+cancelCallback d = rtmidi_in_cancel_callback (toInput d)
+
+ignoreTypes :: Device -> Bool -> Bool -> Bool -> IO ()
+ignoreTypes d sysex time sense = rtmidi_in_ignore_types (toInput d) sysex time sense
+
 -- TODO: rtmidi_in_get_message
 
 defaultOutput :: IO Device
