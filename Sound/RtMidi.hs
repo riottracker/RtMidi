@@ -21,19 +21,14 @@ import Foreign.C.String
 data Device = Input (Ptr ()) | Output (Ptr ())
 
 device :: Device -> Ptr ()
-device d = case d of
-             Input x -> x
-             Output x -> x
+device (Input x) = x
+device (Output x) = x
 
 toInput :: Device -> Ptr ()
-toInput d = case d of
-              Input x -> x
-              _ -> error "illegal conversion"
+toInput (Input x) = x
 
 toOutput :: Device -> Ptr ()
-toOutput d = case d of
-              Output x -> x
-              _ -> error "illegal conversion"
+toOutput (Output x) = x
 
 data Api
   = UnspecifiedApi
@@ -140,7 +135,7 @@ foreign import ccall "rtmidi_c.h rtmidi_out_get_current_api"
    rtmidi_out_get_current_api :: Ptr () -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
-   rtmidi_out_send_message :: Ptr () -> CString -> CInt -> IO CInt
+   rtmidi_out_send_message :: Ptr () -> Ptr CUChar -> CInt -> IO CInt
 
 
 apiSize :: IO Int
@@ -202,10 +197,15 @@ defaultOutput :: IO Device
 defaultOutput = Output <$> rtmidi_out_create_default
 
 output :: Api -> String -> IO Device
-output api clientName = Output <$> (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
+output api clientName = Output <$>
+   (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
 
 -- TODO: rtmidi_out_free
--- TODO: rtmidi_out_send_message
+
+-- TODO: error handling
+sendMessage :: Device -> [CUChar] -> IO ()
+sendMessage d m = withArray m $
+   \ptr -> rtmidi_out_send_message (toOutput d) ptr (fromIntegral $ length m) >> return ()
 
 currentApi :: Device -> IO Api
 currentApi d = (toEnum . fromEnum) <$>
