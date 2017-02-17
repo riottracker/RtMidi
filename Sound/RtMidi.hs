@@ -19,6 +19,7 @@ module Sound.RtMidi (
     , defaultOutput
     , output
     , sendMessage
+    , close
     , currentApi
     ) where
 
@@ -181,8 +182,6 @@ input :: Api -> String -> Int -> IO Device
 input api clientName queueSizeLimit = Input <$>
    (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
 
--- TODO: rtmidi_in_free
-
 foreign import ccall "wrapper"
   wrap :: (CDouble -> CString -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> CString -> Ptr () -> IO ()))
 
@@ -210,12 +209,14 @@ output :: Api -> String -> IO Device
 output api clientName = Output <$>
    (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
 
--- TODO: rtmidi_out_free
-
 -- TODO: error handling
 sendMessage :: Device -> [CUChar] -> IO ()
 sendMessage d m = withArray m $
    \ptr -> rtmidi_out_send_message (toOutput d) ptr (fromIntegral $ length m) >> return ()
+
+close :: Device -> IO ()
+close (Input x) = rtmidi_in_free x
+close (Output x) = rtmidi_out_free x
 
 currentApi :: Device -> IO Api
 currentApi d = (toEnum . fromEnum) <$>

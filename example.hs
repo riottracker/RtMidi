@@ -8,3 +8,4 @@ main = do
   d <- mapM (portName o) [0..p-1]
   mapM_ putStrLn d
   putStrLn $ show s
+  close o
