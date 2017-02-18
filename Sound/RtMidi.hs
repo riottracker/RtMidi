@@ -11,15 +11,16 @@ module Sound.RtMidi (
     , portCount
     , portName
     , defaultInput
-    , input
+    , createInput
     , setCallback
     , cancelCallback
     , ignoreTypes
     , getMessage
     , defaultOutput
-    , output
+    , createOutput
     , sendMessage
-    , close
+    , closeInput
+    , closeOutput
     , currentApi
     ) where
 
@@ -178,8 +179,8 @@ portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
 defaultInput :: IO Device
 defaultInput = Input <$> rtmidi_in_create_default
 
-input :: Api -> String -> Int -> IO Device
-input api clientName queueSizeLimit = Input <$>
+createInput :: Api -> String -> Int -> IO Device
+createInput api clientName queueSizeLimit = Input <$>
    (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
 
 foreign import ccall "wrapper"
@@ -205,8 +206,8 @@ getMessage d = alloca $ \m -> alloca $ \s -> do
 defaultOutput :: IO Device
 defaultOutput = Output <$> rtmidi_out_create_default
 
-output :: Api -> String -> IO Device
-output api clientName = Output <$>
+createOutput :: Api -> String -> IO Device
+createOutput api clientName = Output <$>
    (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
 
 -- TODO: error handling
@@ -214,9 +215,9 @@ sendMessage :: Device -> [CUChar] -> IO ()
 sendMessage d m = withArrayLen m $
    \n ptr -> rtmidi_out_send_message (toOutput d) ptr (fromIntegral n) >> return ()
 
-close :: Device -> IO ()
-close (Input x) = rtmidi_in_free x
-close (Output x) = rtmidi_out_free x
+closeInput (Input x) = rtmidi_in_free x
+
+closeOutput (Output x) = rtmidi_out_free x
 
 currentApi :: Device -> IO Api
 currentApi d = (toEnum . fromEnum) <$>

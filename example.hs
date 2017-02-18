@@ -2,7 +2,7 @@ import Sound.RtMidi
 import Control.Concurrent
 
 main = do
-  o <- output AlsaApi "rtmidi"
+  o <- createOutput AlsaApi "rtmidi"
   a <- currentApi o
   putStrLn $ "using api: " ++ show a
   threadDelay 10
@@ -20,4 +20,4 @@ main = do
   let song = cycle (arp0 ++ arp1 ++ arp2 ++ arp0)
   mapM_ (\x -> sendMessage o [0x90, x, 0x7f] >> threadDelay 120000) $ take 480 song
   closePort o
-  close o
+  closeOutput o
