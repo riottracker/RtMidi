@@ -211,8 +211,8 @@ output api clientName = Output <$>
 
 -- TODO: error handling
 sendMessage :: Device -> [CUChar] -> IO ()
-sendMessage d m = withArray m $
-   \ptr -> rtmidi_out_send_message (toOutput d) ptr (fromIntegral $ length m) >> return ()
+sendMessage d m = withArrayLen m $
+   \n ptr -> rtmidi_out_send_message (toOutput d) ptr (fromIntegral n) >> return ()
 
 close :: Device -> IO ()
 close (Input x) = rtmidi_in_free x
