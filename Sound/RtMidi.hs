@@ -120,7 +120,7 @@ foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
    rtmidi_in_get_current_api :: Ptr () -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_in_set_callback"
-   rtmidi_in_set_callback :: Ptr () -> FunPtr (CDouble -> CString -> Ptr () -> IO()) -> Ptr () -> IO ()
+   rtmidi_in_set_callback :: Ptr () -> FunPtr (CDouble -> Ptr CUChar -> Ptr () -> IO ()) -> Ptr () -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
    rtmidi_in_cancel_callback :: Ptr () -> IO ()
@@ -184,10 +184,10 @@ createInput api clientName queueSizeLimit = Input <$>
    (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
 
 foreign import ccall "wrapper"
-  wrap :: (CDouble -> CString -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> CString -> Ptr () -> IO ()))
+  wrap :: (CDouble -> Ptr CUChar -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> Ptr CUChar -> Ptr () -> IO ()))
 
-setCallback :: Device -> (CDouble -> CString -> Ptr () -> IO ()) -> Ptr () -> IO ()
-setCallback d c u = flip (rtmidi_in_set_callback (toInput d)) u =<< (wrap c)
+setCallback :: Device -> (CDouble -> Ptr CUChar -> IO ()) -> IO ()
+setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< (wrap $ ((const .).) c)
 
 cancelCallback :: Device -> IO ()
 cancelCallback d = rtmidi_in_cancel_callback (toInput d)
