@@ -13,6 +13,7 @@ module Sound.RtMidi (
     , defaultInput
     , createInput
     , setCallback
+    , setCallbackWithUserData
     , cancelCallback
     , ignoreTypes
     , getMessage
@@ -203,8 +204,8 @@ createInput api clientName queueSizeLimit = Input <$>
 foreign import ccall "wrapper"
   wrap :: (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()))
 
-proxy :: (CDouble -> [CUChar] -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
-proxy f t d s _ = f t =<< peekArray (fromIntegral s) d
+proxy :: (CDouble -> [CUChar] -> Ptr () -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
+proxy f t d s p = peekArray (fromIntegral s) d >>= \a -> f t a p
 
 -- |Set a callback function to be invoked for incoming MIDI messages.
 -- 
@@ -214,7 +215,14 @@ proxy f t d s _ = f t =<< peekArray (fromIntegral s) d
 setCallback :: Device
             -> (CDouble -> [CUChar] -> IO ())  -- ^ Function that takes a timestamp and a MIDI message as arguments
             -> IO ()
-setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< (wrap $ proxy c)
+setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< wrap (proxy ((const .) . c))
+
+
+setCallbackWithUserData :: Device
+                        -> (CDouble -> [CUChar] -> Ptr () -> IO ())
+                        -> Ptr ()
+                        -> IO ()
+setCallbackWithUserData d c u = flip (rtmidi_in_set_callback (toInput d)) u =<< (wrap $ proxy c)
 
 -- |Cancel use of the current callback function (if one exists).
 --
@@ -252,7 +260,7 @@ defaultOutput = Output <$> rtmidi_out_create_default
 
 -- |Create a new device to use for output.
 createOutput :: Api        -- ^ API to use
-             -> String     -- ° client name
+             -> String     -- ^ client name
              -> IO Device
 createOutput api clientName = Output <$>
    (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
