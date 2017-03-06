@@ -150,7 +150,7 @@ foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
 apiSize :: IO Int
 apiSize = fromEnum <$> rtmidi_sizeof_rtmidi_api
 
--- TODO: error handling
+-- |A static function to determine MIDI APIs built in.
 compiledApis :: IO [Api]
 compiledApis = fmap (map (toEnum . fromEnum)) $ do
    n <- fromIntegral <$> rtmidi_get_compiled_api nullPtr
@@ -160,26 +160,43 @@ compiledApis = fmap (map (toEnum . fromEnum)) $ do
 
 -- TODO: rtmidi_error
 
-openPort :: Device -> Int -> String -> IO ()
+-- |Open a MIDI connection
+openPort :: Device
+         -> Int          -- ^ port number
+         -> String       -- ^ name for the application port that is used
+         -> IO ()
 openPort d n name = withCString name $ rtmidi_open_port (device d) (toEnum n)
 
+-- |This function creates a virtual MIDI output port to which other software applications can connect.
+--
+-- This type of functionality is currently only supported by the Macintosh OS X, Linux ALSA and JACK APIs
+-- (the function does nothing with the other APIs).
 openVirtualPort :: Device -> String -> IO ()
 openVirtualPort d name = withCString name $ rtmidi_open_virtual_port (device d)
 
+-- |Close an open MIDI connection (if one exists).
 closePort :: Device -> IO ()
 closePort d = rtmidi_close_port $ device d
 
+-- |Return the number of MIDI ports available to the device.
 portCount :: Device -> IO Int
 portCount d = fromIntegral <$> (rtmidi_get_port_count $ device d)
 
+-- |Return a string identifier for the specified MIDI port number.
+--
+-- An empty string is returned if an invalid port specifier is provided. 
 portName :: Device -> Int -> IO String
 portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
 
-
+-- |Default constructor for a device to use for input.
 defaultInput :: IO Device
 defaultInput = Input <$> rtmidi_in_create_default
 
-createInput :: Api -> String -> Int -> IO Device
+-- |Create a new device to use for input.
+createInput :: Api        -- ^ API to use
+            -> String     -- ^ client name
+            -> Int        -- ^ size of the MIDI input queue
+            -> IO Device
 createInput api clientName queueSizeLimit = Input <$>
    (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
 
@@ -189,16 +206,39 @@ foreign import ccall "wrapper"
 proxy :: (CDouble -> [CUChar] -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
 proxy f t d s _ = f t =<< peekArray (fromIntegral s) d
 
-setCallback :: Device -> (CDouble -> [CUChar] -> IO ()) -> IO ()
+-- |Set a callback function to be invoked for incoming MIDI messages.
+-- 
+-- The callback function will be called whenever an incoming MIDI message is received.
+-- While not absolutely necessary, it is best to set the callback function before opening a MIDI port to avoid leaving
+-- some messages in the queue.
+setCallback :: Device
+            -> (CDouble -> [CUChar] -> IO ())  -- ^ Function that takes a timestamp and a MIDI message as arguments
+            -> IO ()
 setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< (wrap $ proxy c)
 
+-- |Cancel use of the current callback function (if one exists).
+--
+-- Subsequent incoming MIDI messages will be written to the queue and can be retrieved with the `getMessage` function.
 cancelCallback :: Device -> IO ()
 cancelCallback d = rtmidi_in_cancel_callback (toInput d)
 
-ignoreTypes :: Device -> Bool -> Bool -> Bool -> IO ()
+-- |Specify whether certain MIDI message types should be queued or ignored during input. 
+--
+-- By default, MIDI timing and active sensing messages are ignored during message input because of their
+-- relative high data rates. MIDI sysex messages are ignored by default as well.
+-- Variable values of "true" imply that the respective message type will be ignored.
+ignoreTypes :: Device
+            -> Bool       -- ^ SysEx messages
+            -> Bool       -- ^ Time messages
+            -> Bool       -- ^ Sense messages
+            -> IO ()
 ignoreTypes d sysex time sense = rtmidi_in_ignore_types (toInput d) sysex time sense
 
 -- TODO: error handling
+-- |Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
+--
+-- This function returns immediately whether a new message is available or not.
+-- A valid message is indicated by whether the list contains any elements.
 getMessage :: Device -> IO ([CUChar], Double)
 getMessage d = alloca $ \m -> alloca $ \s -> do
    timestamp <- rtmidi_in_get_message (toInput d) m s
@@ -206,22 +246,30 @@ getMessage d = alloca $ \m -> alloca $ \s -> do
    message <- peekArray (fromIntegral size) =<< peek m
    return (message, toEnum $ fromEnum timestamp)
 
+-- |Default constructor for a device to use for output.
 defaultOutput :: IO Device
 defaultOutput = Output <$> rtmidi_out_create_default
 
-createOutput :: Api -> String -> IO Device
+-- |Create a new device to use for output.
+createOutput :: Api        -- ^ API to use
+             -> String     -- ° client name
+             -> IO Device
 createOutput api clientName = Output <$>
    (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
 
 -- TODO: error handling
+-- |Immediately send a single message out an open MIDI output port. 
 sendMessage :: Device -> [CUChar] -> IO ()
 sendMessage d m = withArrayLen m $
    \n ptr -> rtmidi_out_send_message (toOutput d) ptr (fromIntegral n) >> return ()
 
+-- |If a MIDI connection is still open, it will be closed
 closeInput (Input x) = rtmidi_in_free x
 
+-- |Close any open MIDI connections
 closeOutput (Output x) = rtmidi_out_free x
 
+-- |Returns the specifier for the MIDI API in use
 currentApi :: Device -> IO Api
 currentApi d = (toEnum . fromEnum) <$>
    case d of
