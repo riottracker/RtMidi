@@ -6,6 +6,28 @@ extra-source-files:  rtmidi/rtmidi_c.h
                      rtmidi/RtMidi.h
 cabal-version:       >=1.10
 
+
+Flag alsa {
+  Description:  Enable ALSA sequencer support
+  Default:      False
+}
+
+Flag jack {
+  Description:  Enable support
+  Default:      False
+}
+
+Flag core {
+  Description:  Enable CoreMIDI support
+  Default:      False
+}
+
+Flag mm {
+  Description:  Enable Windows Multimedia Library support
+  Default:      False
+}
+
+
 library
   exposed-modules:     Sound.RtMidi
   -- other-modules:       
@@ -13,28 +35,19 @@ library
   build-depends:       base >=4.9 && <4.10
   default-language:    Haskell2010
   include-dirs:        rtmidi
-  cc-options:          -D__LINUX_ALSA__ 
+  extra-libraries:     stdc++
   c-sources:           rtmidi/RtMidi.cpp
                        rtmidi/rtmidi_c.cpp
-  extra-libraries:     asound pthread stdc++
+  if flag(alsa)
+    cc-options:       -D__LINUX_ALSA__
+    extra-libraries:  asound pthread
+  if flag(jack)
+    cc-options:       -D__UNIX_JACK__
+    extra-libraries:  jack
+  if flag(core)
+    cc-options:       -D__MAXOSX_CORE__
+    extra-libraries:  CoreMIDI CoreAudio CoreFoundation
 
-executable example-playback
-  main-is:             examples/playback.hs
-  build-depends:       base >=4.9 && <4.10
-                     , RtMidi
-  default-language:    Haskell2010
-
-executable example-query
-  main-is:             examples/query.hs
-  build-depends:       base >=4.9 && <4.10
-                     , RtMidi
-  default-language:    Haskell2010
-
-executable example-callback
-  main-is:             examples/callback.hs
-  build-depends:       base >=4.9 && <4.10
-                     , RtMidi
-  default-language:    Haskell2010
 
 source-repository head
   type:     git

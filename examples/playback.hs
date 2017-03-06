@@ -2,7 +2,7 @@ import Sound.RtMidi
 import Control.Concurrent
 
 main = do
-  device <- createOutput AlsaApi "rtmidi"
+  device <- defaultOutput
   numPorts <- portCount device
   ports <- mapM (portName device) [0..numPorts-1]
   mapM_ (\t -> putStrLn $ show t) $ zip [0..] ports
