@@ -39,7 +39,7 @@ enum RtMidiErrorType {
   RT_ERROR_DRIVER_ERROR, RT_ERROR_SYSTEM_ERROR, RT_ERROR_THREAD_ERROR
 };
 
-typedef void(* RtMidiCCallback) (double timeStamp, const unsigned char* message, void *userData);
+typedef void(* RtMidiCCallback) (double timeStamp, const unsigned char* message, unsigned int msg_len, void *userData);
 
 RTMIDIAPI int rtmidi_sizeof_rtmidi_api ();
 

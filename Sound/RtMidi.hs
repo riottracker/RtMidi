@@ -120,7 +120,7 @@ foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
    rtmidi_in_get_current_api :: Ptr () -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_in_set_callback"
-   rtmidi_in_set_callback :: Ptr () -> FunPtr (CDouble -> Ptr CUChar -> Ptr () -> IO ()) -> Ptr () -> IO ()
+   rtmidi_in_set_callback :: Ptr () -> FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()) -> Ptr () -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
    rtmidi_in_cancel_callback :: Ptr () -> IO ()
@@ -184,10 +184,13 @@ createInput api clientName queueSizeLimit = Input <$>
    (withCString clientName $ \str -> rtmidi_in_create (toEnum $ fromEnum api) str (toEnum queueSizeLimit))
 
 foreign import ccall "wrapper"
-  wrap :: (CDouble -> Ptr CUChar -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> Ptr CUChar -> Ptr () -> IO ()))
+  wrap :: (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()))
 
-setCallback :: Device -> (CDouble -> Ptr CUChar -> IO ()) -> IO ()
-setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< (wrap $ ((const .).) c)
+proxy :: (CDouble -> [CUChar] -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
+proxy f t d s _ = f t =<< peekArray (fromIntegral s) d
+
+setCallback :: Device -> (CDouble -> [CUChar] -> IO ()) -> IO ()
+setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< (wrap $ proxy c)
 
 cancelCallback :: Device -> IO ()
 cancelCallback d = rtmidi_in_cancel_callback (toInput d)

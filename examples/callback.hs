@@ -4,10 +4,8 @@ import Foreign.C
 import Foreign.Ptr
 import Foreign.Marshal.Array
 
-callback :: CDouble -> Ptr CUChar -> IO ()
-callback delta msg = do
-  message <- peekArray 3 msg
-  putStrLn $ (foldr (showHex . fromEnum) "" message) ++ " - " ++ (show delta)
+callback :: CDouble -> [CUChar] -> IO ()
+callback delta msg = putStrLn $ (foldr (showHex . fromEnum) "" msg) ++ " - " ++ (show delta)
 
 main = do
   i <- defaultInput
