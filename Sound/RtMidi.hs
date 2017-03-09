@@ -1,9 +1,12 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
+
+-- | Interface to RtMidi
 module Sound.RtMidi (
-      Device(..)
+      Device
+    , Error
+    , ErrorType
     , Api(..)
-    , apiSize
     , compiledApis
     , openPort
     , openVirtualPort
@@ -29,6 +32,7 @@ import Control.Monad
 import Foreign
 import Foreign.C
 import Foreign.C.String
+
 
 data Device = Input (Ptr ()) | Output (Ptr ())
 
@@ -80,7 +84,51 @@ data ErrorType
   | ThreadError
   deriving (Eq, Show)
 
+instance Enum ErrorType where
+  fromEnum Warning = 0
+  fromEnum DebugWarning = 1
+  fromEnum UnspecifiedError = 2
+  fromEnum NoDevicesFound = 3
+  fromEnum InvalidDevice = 4
+  fromEnum MemoryError = 5
+  fromEnum InvalidParameter = 6
+  fromEnum InvalidUse = 7
+  fromEnum DriverError = 8
+  fromEnum SystemError = 9
+  fromEnum ThreadError = 10
+  toEnum 0 = Warning
+  toEnum 1 = DebugWarning
+  toEnum 2 = UnspecifiedError
+  toEnum 3 = NoDevicesFound
+  toEnum 4 = InvalidDevice
+  toEnum 5 = MemoryError
+  toEnum 6 = InvalidParameter
+  toEnum 7 = InvalidUse
+  toEnum 8 = DriverError
+  toEnum 9 = SystemError
+  toEnum 10 = ThreadError
 
+
+data Error = Error ErrorType String
+
+data Wrapper = Wrapper
+             { ptr :: Ptr ()
+             , ok  :: Bool
+             , msg :: String
+             }
+
+
+peekWrapper :: Ptr () -> IO Wrapper
+peekWrapper p = do
+  a <- peek (castPtr p)
+  b <- peek $ castPtr (plusPtr p $ sizeOf a)
+  c <- peekCString $ castPtr (plusPtr p $ sizeOf a + sizeOf b)
+  return $ Wrapper a b c
+
+checkForErrors :: Device -> IO (Maybe String)
+checkForErrors d = peekWrapper (device d) >>= \w -> if ok w then return Nothing else return $ Just (msg w)
+
+ 
 foreign import ccall "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
    rtmidi_sizeof_rtmidi_api :: IO CInt
 
@@ -88,8 +136,8 @@ foreign import ccall "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
 foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
    rtmidi_get_compiled_api :: Ptr (Ptr CInt) -> IO CInt
 
-foreign import ccall "rtmidi_c.h rtmidi_error"
-   rtmidi_error :: CInt -> CString -> IO ()
+-- foreign import ccall "rtmidi_c.h rtmidi_error"
+--    rtmidi_error :: CInt -> CString -> IO ()
 
 
 foreign import ccall "rtmidi_c.h rtmidi_open_port"
@@ -151,7 +199,7 @@ foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
 apiSize :: IO Int
 apiSize = fromEnum <$> rtmidi_sizeof_rtmidi_api
 
--- |A static function to determine MIDI APIs built in.
+-- |A static function to determine MIDI 'Api's built in.
 compiledApis :: IO [Api]
 compiledApis = fmap (map (toEnum . fromEnum)) $ do
    n <- fromIntegral <$> rtmidi_get_compiled_api nullPtr
@@ -159,7 +207,9 @@ compiledApis = fmap (map (toEnum . fromEnum)) $ do
       rtmidi_get_compiled_api ptr
       peekArray n =<< peek ptr
 
--- TODO: rtmidi_error
+-- -- |Report an error
+-- reportError :: Error -> IO ()
+-- reportError (Error e s) = withCString s $ rtmidi_error (toEnum $ fromEnum $ e)
 
 -- |Open a MIDI connection
 openPort :: Device
@@ -179,7 +229,7 @@ openVirtualPort d name = withCString name $ rtmidi_open_virtual_port (device d)
 closePort :: Device -> IO ()
 closePort d = rtmidi_close_port $ device d
 
--- |Return the number of MIDI ports available to the device.
+-- |Return the number of MIDI ports available to the 'Device'.
 portCount :: Device -> IO Int
 portCount d = fromIntegral <$> (rtmidi_get_port_count $ device d)
 
@@ -189,11 +239,11 @@ portCount d = fromIntegral <$> (rtmidi_get_port_count $ device d)
 portName :: Device -> Int -> IO String
 portName d n = peekCString =<< rtmidi_get_port_name (device d) (toEnum n)
 
--- |Default constructor for a device to use for input.
+-- |Default constructor for a 'Device' to use for input.
 defaultInput :: IO Device
 defaultInput = Input <$> rtmidi_in_create_default
 
--- |Create a new device to use for input.
+-- |Create a new 'Device' to use for input.
 createInput :: Api        -- ^ API to use
             -> String     -- ^ client name
             -> Int        -- ^ size of the MIDI input queue
@@ -218,6 +268,9 @@ setCallback :: Device
 setCallback d c = flip (rtmidi_in_set_callback (toInput d)) nullPtr =<< wrap (proxy ((const .) . c))
 
 
+-- |See `setCallback`.
+--
+-- Additionally a 'Ptr ()' is passed to the callback function whenever it is called.
 setCallbackWithUserData :: Device
                         -> (CDouble -> [CUChar] -> Ptr () -> IO ())
                         -> Ptr ()
@@ -234,7 +287,7 @@ cancelCallback d = rtmidi_in_cancel_callback (toInput d)
 --
 -- By default, MIDI timing and active sensing messages are ignored during message input because of their
 -- relative high data rates. MIDI sysex messages are ignored by default as well.
--- Variable values of "true" imply that the respective message type will be ignored.
+-- Variable values of `true` imply that the respective message type will be ignored.
 ignoreTypes :: Device
             -> Bool       -- ^ SysEx messages
             -> Bool       -- ^ Time messages
@@ -242,7 +295,6 @@ ignoreTypes :: Device
             -> IO ()
 ignoreTypes d sysex time sense = rtmidi_in_ignore_types (toInput d) sysex time sense
 
--- TODO: error handling
 -- |Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
 --
 -- This function returns immediately whether a new message is available or not.
@@ -254,18 +306,17 @@ getMessage d = alloca $ \m -> alloca $ \s -> do
    message <- peekArray (fromIntegral size) =<< peek m
    return (message, toEnum $ fromEnum timestamp)
 
--- |Default constructor for a device to use for output.
+-- |Default constructor for a 'Device' to use for output.
 defaultOutput :: IO Device
 defaultOutput = Output <$> rtmidi_out_create_default
 
--- |Create a new device to use for output.
+-- |Create a new 'Device' to use for output.
 createOutput :: Api        -- ^ API to use
              -> String     -- ^ client name
              -> IO Device
 createOutput api clientName = Output <$>
    (withCString clientName $ rtmidi_out_create (toEnum (fromEnum api)))
 
--- TODO: error handling
 -- |Immediately send a single message out an open MIDI output port. 
 sendMessage :: Device -> [CUChar] -> IO ()
 sendMessage d m = withArrayLen m $
@@ -277,7 +328,7 @@ closeInput (Input x) = rtmidi_in_free x
 -- |Close any open MIDI connections
 closeOutput (Output x) = rtmidi_out_free x
 
--- |Returns the specifier for the MIDI API in use
+-- |Returns the specifier for the MIDI 'Api' in use
 currentApi :: Device -> IO Api
 currentApi d = (toEnum . fromEnum) <$>
    case d of

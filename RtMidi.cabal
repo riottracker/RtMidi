@@ -6,24 +6,23 @@ extra-source-files:  rtmidi/rtmidi_c.h
                      rtmidi/RtMidi.h
 cabal-version:       >=1.10
 
-
 Flag alsa {
-  Description:  Enable ALSA sequencer support
+  Description:  Enable ALSA sequencer api
   Default:      False
 }
 
 Flag jack {
-  Description:  Enable support
+  Description:  Enable JACK api
   Default:      False
 }
 
 Flag core {
-  Description:  Enable CoreMIDI support
+  Description:  Enable CoreMIDI api
   Default:      False
 }
 
 Flag mm {
-  Description:  Enable Windows Multimedia Library support
+  Description:  Enable Windows Multimedia Library api
   Default:      False
 }
 
