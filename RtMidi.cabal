@@ -1,10 +1,19 @@
 name:                RtMidi
 version:             0.1.0.0
+description:         Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 category:            Sound
 build-type:          Simple
+author:              kohlrabi
+license-file:        LICENSE
+homepage:            https://github.com/riottracker/RtMidi
+maintainer:          kohlrabi@kohlra.biz
 extra-source-files:  rtmidi/rtmidi_c.h
                      rtmidi/RtMidi.h
+                     examples/playback.hs
+                     examples/query.hs
+                     examples/callback.hs
 cabal-version:       >=1.10
+license:             MIT
 
 Flag alsa {
   Description:  Enable ALSA sequencer api
