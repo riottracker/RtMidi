@@ -36,11 +36,12 @@ int rtmidi_get_compiled_api (enum RtMidiApi **apis) // return length for NULL ar
 	}
 }
 
-void rtmidi_error (MidiApi *api, enum RtMidiErrorType type, const char* errorString)
+void rtmidi_error (RtMidiPtr device, enum RtMidiErrorType type, const char* errorString)
 {
 	std::string msg = errorString;
-	api->error ((RtMidiError::Type) type, msg);
+	((MidiApi*) device->ptr)->error ((RtMidiError::Type) type, msg);
 }
+
 
 void rtmidi_open_port (RtMidiPtr device, unsigned int portNumber, const char *portName)
 {

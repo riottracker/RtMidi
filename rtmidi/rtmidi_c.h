@@ -3,6 +3,8 @@
 #ifndef RTMIDI_C_H
 #define RTMIDI_C_H
 
+#include <stdlib.h>
+
 #if defined(RTMIDI_EXPORT)
 #define RTMIDIAPI __declspec(dllexport)
 #else
@@ -45,7 +47,7 @@ RTMIDIAPI int rtmidi_sizeof_rtmidi_api ();
 
 /* RtMidi API */
 RTMIDIAPI int rtmidi_get_compiled_api (enum RtMidiApi **apis); // return length for NULL argument.
-RTMIDIAPI void rtmidi_error (enum RtMidiErrorType type, const char* errorString);
+RTMIDIAPI void rtmidi_error (RtMidiPtr device, enum RtMidiErrorType type, const char* errorString);
 
 RTMIDIAPI void rtmidi_open_port (RtMidiPtr device, unsigned int portNumber, const char *portName);
 RTMIDIAPI void rtmidi_open_virtual_port (RtMidiPtr device, const char *portName);

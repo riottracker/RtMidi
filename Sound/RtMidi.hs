@@ -8,6 +8,7 @@ module Sound.RtMidi (
     , ErrorType (..)
     , Api(..)
     , ready
+    , reportError
 --    , checkForErrors
     , compiledApis
     , openPort
@@ -137,8 +138,13 @@ checkForErrors :: Device -> IO [Char]
 checkForErrors d = peek (device d) >>= (\w -> do
     (putStrLn $ show w)
     a <- peekArray0 0 $ plusPtr (castPtr (msg w)) 10
-    return a) >>= \x -> return $ map castCCharToChar x
+    return a) >>= return . map castCCharToChar
 
+reportError :: Device -> ErrorType -> String -> IO ()
+reportError d et em = withCString em $ rtmidi_error (device d) (toEnum . fromEnum $ et)
+
+foreign import ccall "rtmidi_c.h rtmidi_error"
+   rtmidi_error :: Ptr Wrapper -> CInt -> CString -> IO ()
  
 foreign import ccall "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
    rtmidi_sizeof_rtmidi_api :: IO CInt
