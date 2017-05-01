@@ -146,67 +146,67 @@ reportError d et em = withCString em $ rtmidi_error (device d) (toEnum . fromEnu
 foreign import ccall "rtmidi_c.h rtmidi_error"
    rtmidi_error :: Ptr Wrapper -> CInt -> CString -> IO ()
  
-foreign import ccall "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_sizeof_rtmidi_api"
    rtmidi_sizeof_rtmidi_api :: IO CInt
 
 
-foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_get_compiled_api"
    rtmidi_get_compiled_api :: Ptr (Ptr CInt) -> IO CInt
 
 
-foreign import ccall "rtmidi_c.h rtmidi_open_port"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_open_port"
    rtmidi_open_port :: Ptr Wrapper -> CInt -> CString -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_open_virtual_port"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_open_virtual_port"
    rtmidi_open_virtual_port :: Ptr Wrapper -> CString -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_close_port"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_close_port"
    rtmidi_close_port :: Ptr Wrapper -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_get_port_count"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_get_port_count"
    rtmidi_get_port_count :: Ptr Wrapper -> IO CInt
 
-foreign import ccall "rtmidi_c.h rtmidi_get_port_name"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_get_port_name"
    rtmidi_get_port_name :: Ptr Wrapper -> CInt -> IO CString
 
 
-foreign import ccall "rtmidi_c.h rtmidi_in_create_default"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_in_create_default"
    rtmidi_in_create_default :: IO (Ptr Wrapper)
 
-foreign import ccall "rtmidi_c.h rtmidi_in_create"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_in_create"
    rtmidi_in_create :: CInt -> CString -> CInt -> IO (Ptr Wrapper)
 
-foreign import ccall "rtmidi_c.h rtmidi_in_free"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_in_free"
    rtmidi_in_free :: Ptr Wrapper -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_in_get_current_api"
    rtmidi_in_get_current_api :: Ptr Wrapper -> IO CInt
 
-foreign import ccall "rtmidi_c.h rtmidi_in_set_callback"
+foreign import ccall safe "rtmidi_c.h rtmidi_in_set_callback"
    rtmidi_in_set_callback :: Ptr Wrapper -> FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()) -> Ptr () -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
+foreign import ccall safe "rtmidi_c.h rtmidi_in_cancel_callback"
    rtmidi_in_cancel_callback :: Ptr Wrapper -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_in_ignore_types"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_in_ignore_types"
    rtmidi_in_ignore_types :: Ptr Wrapper -> Bool -> Bool -> Bool -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_in_get_message"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_in_get_message"
    rtmidi_in_get_message :: Ptr Wrapper -> Ptr (Ptr CUChar) -> Ptr CSize -> IO CDouble
 
-foreign import ccall "rtmidi_c.h rtmidi_out_create_default"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_out_create_default"
    rtmidi_out_create_default :: IO (Ptr Wrapper)
 
-foreign import ccall "rtmidi_c.h rtmidi_out_create"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_out_create"
    rtmidi_out_create :: CInt -> CString -> IO (Ptr Wrapper)
 
-foreign import ccall "rtmidi_c.h rtmidi_out_free"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_out_free"
    rtmidi_out_free :: Ptr Wrapper -> IO ()
 
-foreign import ccall "rtmidi_c.h rtmidi_out_get_current_api"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_out_get_current_api"
    rtmidi_out_get_current_api :: Ptr Wrapper -> IO CInt
 
-foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
+foreign import ccall unsafe "rtmidi_c.h rtmidi_out_send_message"
    rtmidi_out_send_message :: Ptr Wrapper -> Ptr CUChar -> CInt -> IO CInt
 
 
