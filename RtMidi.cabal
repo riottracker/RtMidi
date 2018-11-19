@@ -1,5 +1,5 @@
 name:                RtMidi
-version:             0.1.0.0
+version:             0.1.1.0
 description:         Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 category:            Sound
 build-type:          Simple
