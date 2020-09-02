@@ -22,11 +22,8 @@ jobs:
           keys:
             - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
       - run:
-          name: Resolve/update dependencies
-          command: make cisetup
-      - run:
           name: Run tests
-          command: make citest
+          command: stack test
       - save_cache:
           name: Cache dependencies
           key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
