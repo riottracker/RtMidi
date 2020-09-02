@@ -5,6 +5,7 @@ import Foreign.C
 callback :: CDouble -> [CUChar] -> IO ()
 callback delta msg = putStrLn $ (foldr (showHex . fromEnum) "" msg) ++ " - " ++ (show delta)
 
+main :: IO ()
 main = do
   i <- defaultInput
   openPort i 0 "RtMidi"

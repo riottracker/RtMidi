@@ -1,5 +1,5 @@
 name:                RtMidi
-version:             0.1.1.0
+version:             0.2.0.0
 description:         Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 category:            Sound
 build-type:          Simple
@@ -38,8 +38,6 @@ Flag mm {
 
 library
   exposed-modules:     Sound.RtMidi
-  -- other-modules:       
-  -- other-extensions:    
   build-depends:       base >=4.9 && <4.15
   default-language:    Haskell2010
   include-dirs:        rtmidi
@@ -53,11 +51,41 @@ library
     cc-options:       -D__UNIX_JACK__
     extra-libraries:  jack
   if flag(core)
-    cc-options:       -D__MAXOSX_CORE__
-    extra-libraries:  CoreMIDI CoreAudio CoreFoundation
+    cc-options:       -D__MACOSX_CORE__
+    frameworks:       CoreMIDI CoreAudio CoreFoundation
 
+executable rtmidi-callback
+  main-is:            callback.hs
+  hs-source-dirs:     examples
+  build-depends:
+      base
+    , RtMidi
+  default-language:   Haskell2010
+
+executable rtmidi-playback
+  main-is:            playback.hs
+  hs-source-dirs:     examples
+  build-depends:
+      base
+    , RtMidi
+  default-language:   Haskell2010
+
+executable rtmidi-poll
+  main-is:            poll.hs
+  hs-source-dirs:     examples
+  build-depends:
+      base
+    , RtMidi
+  default-language:   Haskell2010
+
+executable rtmidi-query
+  main-is:            query.hs
+  hs-source-dirs:     examples
+  build-depends:
+      base
+    , RtMidi
+  default-language:   Haskell2010
 
 source-repository head
   type:     git
   location: https://github.com/riottracker/RtMidi
-

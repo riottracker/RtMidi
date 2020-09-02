@@ -11,6 +11,7 @@ mainLoop d = do
     putStrLn $ show m
   else return ()
 
+main :: IO ()
 main = do
   i <- defaultInput
   openPort i 0 "RtMidi"
