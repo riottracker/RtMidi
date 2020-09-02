@@ -17,7 +17,7 @@ license:             MIT
 
 Flag alsa {
   Description:  Enable ALSA sequencer api
-  Default:      False
+  Default:      True
 }
 
 Flag jack {
@@ -27,13 +27,14 @@ Flag jack {
 
 Flag core {
   Description:  Enable CoreMIDI api
-  Default:      False
+  Default:      True
 }
 
-Flag mm {
-  Description:  Enable Windows Multimedia Library api
-  Default:      False
-}
+-- TODO(ejconlon) Add windows support
+-- Flag mm {
+--   Description:  Enable Windows Multimedia Library api
+--   Default:      False
+-- }
 
 
 library
@@ -44,15 +45,16 @@ library
   extra-libraries:     stdc++
   c-sources:           rtmidi/RtMidi.cpp
                        rtmidi/rtmidi_c.cpp
-  if flag(alsa)
+  if flag(alsa) && os(linux)
     cc-options:       -D__LINUX_ALSA__
     extra-libraries:  asound pthread
-  if flag(jack)
+  if flag(jack) && (os(linux) || os(darwin))
     cc-options:       -D__UNIX_JACK__
     extra-libraries:  jack
-  if flag(core)
+  if flag(core) && os(darwin)
     cc-options:       -D__MACOSX_CORE__
     frameworks:       CoreMIDI CoreAudio CoreFoundation
+  -- TODO(ejconlon) Add windows support
 
 executable rtmidi-callback
   main-is:            callback.hs

@@ -6,12 +6,17 @@ Haskell wrapper for [RtMidi](http://www.music.mcgill.ca/~gary/rtmidi/), the ligh
 
 This project is tested with Cabal (latest versions of last two compiler lines) and Stack (latest LTS).
 
-Currently, you need to use flags to select the RtMidi backend. For example:
+You can get started with development like so:
 
-    # Build with OSX CoreMIDI support
-    stack build --flag RtMidi:core
+    # Build on OSX CoreMIDI support or Linux with ALSA support
+    # You can also pass `--flag RtMidi:jack` for Jack support
+    stack build
 
     # Verify that it works:
     stack exec -- rtmidi-query
 
-We hope to auto-detect backends like [python-rtmidi](https://github.com/SpotlightKid/python-rtmidi/blob/master/setup.py) in the future.
+## TODO
+
+* Add Windows MM support. This should only require a few changes to the Cabal file.
+* See if there is a way to autodetect Jack in the Cabal file.
+* Publish new version to Hackage and eventually Stackage.
