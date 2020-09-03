@@ -1,0 +1,77 @@
+version: 2.1
+
+parameters:
+  project:
+    type: string
+    default: "RtMidi"
+  cache_ver:
+    type: string
+    default: "v1"
+
+jobs:
+  stack_build:
+    parameters:
+      lts_ghc_ver:
+        type: string
+    docker:
+      - image: haskell:<< parameters.lts_ghc_ver >>
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore cached dependencies
+          keys:
+            - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
+      - run:
+          name: Run tests
+          command: stack test
+      - save_cache:
+          name: Cache dependencies
+          key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
+          paths:
+            - "/root/.stack"
+            - ".stack-work"
+  cabal_build:
+    parameters:
+      ghc_ver:
+        type: string
+    docker:
+      - image: haskell:<< parameters.ghc_ver >>
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore cached dependencies
+          keys:
+            - cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
+      - run:
+          name: Resolve/update dependencies
+          command: cabal update
+      - run:
+          name: Build project
+          command: cabal build
+      - run:
+          name: Run tests
+          command: cabal test
+      - save_cache:
+          name: Cache dependencies
+          key: cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
+          paths:
+            - "/root/.cabal"
+            - "dist"
+            - "dist-newstyle"
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - stack_build:
+          lts_ghc_ver: 8.8.4
+      - cabal_build:
+          name: cabal_build_8_8
+          ghc_ver: 8.8.4
+          requires:
+            - stack_build
+      - cabal_build:
+          name: cabal_build_8_10
+          ghc_ver: 8.10.2
+          requires:
+            - stack_build

@@ -1,8 +1,8 @@
 import Sound.RtMidi
-import Control.Concurrent
 
+main :: IO ()
 main = do
-  device <- createOutput AlsaApi "test"
+  device <- createOutput UnspecifiedApi "test"
   api <- currentApi device
   builtin <- compiledApis
   numPorts <- portCount device

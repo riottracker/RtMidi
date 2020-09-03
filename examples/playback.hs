@@ -1,6 +1,7 @@
 import Sound.RtMidi
 import Control.Concurrent
 
+main :: IO ()
 main = do
   device <- defaultOutput
   numPorts <- portCount device
