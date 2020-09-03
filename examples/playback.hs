@@ -1,5 +1,5 @@
-import Sound.RtMidi
-import Control.Concurrent
+import Sound.RtMidi (closeDevice, closePort, defaultOutput, openPort, sendMessage, portCount, portName)
+import Control.Concurrent (threadDelay)
 
 main :: IO ()
 main = do
@@ -18,4 +18,4 @@ main = do
   mapM_ (\x -> sendMessage device [0x90, x, 0x7f] >> threadDelay 120000) $ take 240 song
   putStrLn "exiting..."
   closePort device
-  closeOutput device
+  closeDevice device
