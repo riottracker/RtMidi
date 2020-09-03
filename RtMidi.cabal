@@ -1,6 +1,6 @@
 name:                RtMidi
 version:             0.2.0.0
-synopsis:            Wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library
+synopsis:            Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
 build-type:          Simple
