@@ -1,10 +1,8 @@
-import Sound.RtMidi
-import Numeric
-import Control.Concurrent
-import Control.Monad
-import Foreign.C
+import Sound.RtMidi (InputDevice, closeDevice, closePort, defaultInput, getMessage, openPort)
+import Control.Concurrent (forkIO, killThread)
+import Control.Monad (forever)
 
-mainLoop :: Device -> IO ()
+mainLoop :: InputDevice -> IO ()
 mainLoop d = do
   m <- getMessage d
   if length (fst m) > 0 then
@@ -18,5 +16,6 @@ main = do
   id <- forkIO $ forever $ mainLoop i
   _ <- getLine
   killThread id
-  closeInput i
+  closePort i
+  closeDevice i
   return ()

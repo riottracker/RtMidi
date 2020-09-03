@@ -1,17 +1,20 @@
 name:                RtMidi
 version:             0.2.0.0
-description:         Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
+synopsis:            Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
+description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
 build-type:          Simple
-author:              kohlrabi
+author:              kohlrabi, Eric Conlon
 license-file:        LICENSE
 homepage:            https://github.com/riottracker/RtMidi
-maintainer:          kohlrabi@kohlra.biz
-extra-source-files:  rtmidi/rtmidi_c.h
+maintainer:          ejconlon@gmail.com
+extra-source-files:  README.md
+                     rtmidi/rtmidi_c.h
                      rtmidi/RtMidi.h
-                     examples/playback.hs
-                     examples/query.hs
                      examples/callback.hs
+                     examples/playback.hs
+                     examples/poll.hs
+                     examples/query.hs
 cabal-version:       >=1.10
 license:             MIT
 
@@ -39,6 +42,7 @@ Flag core {
 
 library
   exposed-modules:     Sound.RtMidi
+  other-modules:       Sound.RtMidi.Foreign
   build-depends:       base >=4.9 && <4.15
   default-language:    Haskell2010
   include-dirs:        rtmidi
@@ -54,6 +58,12 @@ library
   if flag(core) && os(darwin)
     cc-options:       -D__MACOSX_CORE__
     frameworks:       CoreMIDI CoreAudio CoreFoundation
+    -- NOTE(ejconlon) This is to make the c ffi wrapper actually catch
+    -- the c++ exceptions instead of simply aborting.
+    -- Cribbed from https://github.com/fpco/inline-c/pull/89
+    -- avoid https://gitlab.haskell.org/ghc/ghc/issues/11829
+    ld-options:        -Wl,-keep_dwarf_unwind
+    ghc-options:       -pgmc=clang++
   -- TODO(ejconlon) Add windows support
 
 executable rtmidi-callback
@@ -63,6 +73,7 @@ executable rtmidi-callback
       base
     , RtMidi
   default-language:   Haskell2010
+  ghc-options: -threaded -rtsopts
 
 executable rtmidi-playback
   main-is:            playback.hs
@@ -71,6 +82,7 @@ executable rtmidi-playback
       base
     , RtMidi
   default-language:   Haskell2010
+  ghc-options: -threaded -rtsopts
 
 executable rtmidi-poll
   main-is:            poll.hs
@@ -79,6 +91,7 @@ executable rtmidi-poll
       base
     , RtMidi
   default-language:   Haskell2010
+  ghc-options: -threaded -rtsopts
 
 executable rtmidi-query
   main-is:            query.hs
@@ -87,6 +100,7 @@ executable rtmidi-query
       base
     , RtMidi
   default-language:   Haskell2010
+  ghc-options: -threaded -rtsopts
 
 source-repository head
   type:     git
