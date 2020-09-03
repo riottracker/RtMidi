@@ -16,7 +16,6 @@ module Sound.RtMidi
   , defaultInput
   , createInput
   , setCallback
-  , setCallbackWithUserData
   , cancelCallback
   , ignoreTypes
   , getMessage
@@ -35,7 +34,10 @@ import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, allocaBytes, nu
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
 import Sound.RtMidi.Foreign
 
--- This just needs to be bigger than the max MIDI message size, which is 3 bytes
+-- Mostly just needs to be bigger than the max MIDI message size, which is 3 bytes
+-- However, sysex messages can be quite large...
+-- (This quantity is in bytes)
+-- TODO(ejconlon) Allow this to be configurable.
 maxMessageSize :: Int
 maxMessageSize = 4
 
@@ -181,8 +183,8 @@ createInput api clientName queueSizeLimit = do
 foreign import ccall "wrapper"
   wrap :: (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()))
 
-proxy :: (Double -> [Word8] -> Ptr () -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
-proxy f (CDouble t) d s p = peekArray (fromIntegral s) d >>= \a -> f t (coerce a) p
+proxy :: (Double -> [Word8] -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
+proxy f (CDouble t) d s _ = peekArray (fromIntegral s) d >>= \a -> f t (coerce a)
 
 -- | Set a callback function to be invoked for incoming MIDI messages.
 --
@@ -194,21 +196,8 @@ setCallback :: InputDevice
             -> IO ()
 setCallback d c = do
   let dptr = toDevicePtr d
-  f <- wrap (proxy ((const .) . c))
-  rtmidi_in_set_callback dptr f nullPtr
-  guardError dptr
-
--- | See `setCallback`.
---
--- Additionally a 'Ptr ()' is passed to the callback function whenever it is called.
-setCallbackWithUserData :: InputDevice
-                        -> (Double -> [Word8] -> Ptr () -> IO ())
-                        -> Ptr ()
-                        -> IO ()
-setCallbackWithUserData d c u = do
-  let dptr = toDevicePtr d
   f <- wrap (proxy c)
-  rtmidi_in_set_callback dptr f u
+  rtmidi_in_set_callback dptr f nullPtr
   guardError dptr
 
 -- | Cancel use of the current callback function (if one exists).
