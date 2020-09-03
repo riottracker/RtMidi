@@ -55,9 +55,6 @@ instance Storable Wrapper where
 foreign import ccall "rtmidi_c.h rtmidi_close_port"
   rtmidi_close_port :: Ptr Wrapper -> IO ()
 
--- foreign import ccall "rtmidi_c.h rtmidi_error"
---   rtmidi_error :: Ptr Wrapper -> CInt -> CString -> IO ()
-
 foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
   rtmidi_get_compiled_api :: Ptr (Ptr CInt) -> IO CInt
 
