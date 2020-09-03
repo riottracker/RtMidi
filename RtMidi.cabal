@@ -1,13 +1,15 @@
 name:                RtMidi
 version:             0.2.0.0
-description:         Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
+synopsis:            Wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library
+description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
 build-type:          Simple
-author:              kohlrabi
+author:              kohlrabi, Eric Conlon
 license-file:        LICENSE
 homepage:            https://github.com/riottracker/RtMidi
-maintainer:          kohlrabi@kohlra.biz
-extra-source-files:  rtmidi/rtmidi_c.h
+maintainer:          ejconlon@gmail.com
+extra-source-files:  README.md
+                     rtmidi/rtmidi_c.h
                      rtmidi/RtMidi.h
                      examples/callback.hs
                      examples/playback.hs
