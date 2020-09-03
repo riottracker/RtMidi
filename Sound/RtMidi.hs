@@ -31,7 +31,7 @@ import Control.Exception (Exception, throwIO)
 import Control.Monad (unless)
 import Data.Coerce (coerce)
 import Data.Word (Word8)
-import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, allocaBytes, nullPtr, peekArray, with, withArrayLen)
+import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray, with, withArrayLen)
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
 import Sound.RtMidi.Foreign
 
@@ -41,6 +41,7 @@ import Sound.RtMidi.Foreign
 defaultMessageSize :: Int
 defaultMessageSize = 4
 
+-- | Allows us to discriminate in/out functions in generic contexts
 data DeviceType =
     InputDeviceType
   | OutputDeviceType
@@ -49,6 +50,7 @@ data DeviceType =
 newtype Device = Device { unDevice :: Ptr Wrapper }
   deriving (Eq, Show)
 
+-- | Generalizes 'InputDevice' and 'OutputDevice' for use in common functions
 class IsDevice d where
   toDevice :: d -> Device
   getDeviceType :: d -> DeviceType
@@ -56,6 +58,7 @@ class IsDevice d where
 toDevicePtr :: IsDevice d => d -> Ptr Wrapper
 toDevicePtr = unDevice . toDevice
 
+-- | A handle to a device to be used for input
 newtype InputDevice = InputDevice { unInputDevice :: Device }
   deriving (Eq, Show)
 
@@ -63,6 +66,7 @@ instance IsDevice InputDevice where
   toDevice = unInputDevice
   getDeviceType _ = InputDeviceType
 
+-- | A handle to a device to be used for input
 newtype OutputDevice = OutputDevice { unOutputDevice :: Device }
   deriving (Eq, Show)
 
@@ -70,6 +74,7 @@ instance IsDevice OutputDevice where
   toDevice = unOutputDevice
   getDeviceType _ = OutputDeviceType
 
+-- | Enum of RtMidi-supported APIs
 data Api
   = UnspecifiedApi
   | CoreMidiApi
@@ -102,6 +107,7 @@ ready = fmap ok . peek  . toDevicePtr
 newtype Error = Error String deriving (Eq, Show)
 instance Exception Error
 
+-- Detects and throws internal errors
 guardError :: Ptr Wrapper -> IO ()
 guardError dptr = do
   w <- peek dptr
@@ -111,11 +117,13 @@ guardError dptr = do
 
 -- | A static function to determine MIDI 'Api's built in.
 compiledApis :: IO [Api]
-compiledApis = fmap (map (toEnum . fromEnum)) $ do
-  n <- fromIntegral <$> rtmidi_get_compiled_api nullPtr
-  allocaArray n $ flip with $ \ptr -> do
+compiledApis = do
+  n <- fmap fromIntegral (rtmidi_get_compiled_api nullPtr)
+  as <- allocaArray n $ flip with $ \ptr -> do
     rtmidi_get_compiled_api ptr
-    peekArray n =<< peek ptr
+    x <- peek ptr
+    peekArray n x
+  pure (map (toEnum . fromEnum) as)
 
 -- | Open a MIDI connection
 openPort :: IsDevice d
@@ -222,11 +230,11 @@ ignoreTypes :: InputDevice
 ignoreTypes = rtmidi_in_ignore_types . toDevicePtr
 
 -- | Variant of 'getMessage' that allows you to set message buffer size (typically for large sysex messages).
-getMessageSized :: InputDevice -> Int -> IO ([Word8], Double)
-getMessageSized d n = allocaArray n $ flip with $ \m -> alloca $ \s -> do
+getMessageSized :: InputDevice -> Int -> IO (Double, [Word8])
+getMessageSized d n = alloca $ \s -> allocaArray n $ flip with $ \m -> do
   let dptr = toDevicePtr d
   poke s (fromIntegral n)
-  timestamp <- rtmidi_in_get_message dptr m s
+  CDouble timestamp <- rtmidi_in_get_message dptr m s
   guardError dptr
   size <- peek s
   message <-
@@ -236,14 +244,14 @@ getMessageSized d n = allocaArray n $ flip with $ \m -> alloca $ \s -> do
         x <- peek m
         y <- peekArray (fromIntegral size) x
         pure (coerce y)
-  pure (message, toEnum (fromEnum timestamp))
+  pure (timestamp, message)
 
 -- | Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
 --
 -- This function returns immediately whether a new message is available or not.
 -- A valid message is indicated by whether the list contains any elements.
 -- Note that large sysex messages will be silently dropped! Use 'getMessageSized' or use a callback to get these safely.
-getMessage :: InputDevice -> IO ([Word8], Double)
+getMessage :: InputDevice -> IO (Double, [Word8])
 getMessage d = getMessageSized d defaultMessageSize
 
 -- | Default constructor for a 'Device' to use for output.
