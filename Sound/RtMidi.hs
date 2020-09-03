@@ -19,6 +19,7 @@ module Sound.RtMidi
   , cancelCallback
   , ignoreTypes
   , getMessage
+  , getMessageSized
   , defaultOutput
   , createOutput
   , sendMessage
@@ -34,12 +35,11 @@ import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, allocaBytes, nu
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
 import Sound.RtMidi.Foreign
 
+-- The default message size (in bytes) expected from 'getMessage'
 -- Mostly just needs to be bigger than the max MIDI message size, which is 3 bytes
--- However, sysex messages can be quite large...
--- (This quantity is in bytes)
--- TODO(ejconlon) Allow this to be configurable.
-maxMessageSize :: Int
-maxMessageSize = 4
+-- However, sysex messages can be quite large, so you might have to use the 'getMessageSized' variant.
+defaultMessageSize :: Int
+defaultMessageSize = 4
 
 data DeviceType =
     InputDeviceType
@@ -221,14 +221,11 @@ ignoreTypes :: InputDevice
             -> IO ()
 ignoreTypes = rtmidi_in_ignore_types . toDevicePtr
 
--- | Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
---
--- This function returns immediately whether a new message is available or not.
--- A valid message is indicated by whether the list contains any elements.
-getMessage :: InputDevice -> IO ([Word8], Double)
-getMessage d = allocaArray maxMessageSize $ flip with $ \m -> alloca $ \s -> do
+-- | Variant of 'getMessage' that allows you to set message buffer size (typically for large sysex messages).
+getMessageSized :: InputDevice -> Int -> IO ([Word8], Double)
+getMessageSized d n = allocaArray n $ flip with $ \m -> alloca $ \s -> do
   let dptr = toDevicePtr d
-  poke s (fromIntegral maxMessageSize)
+  poke s (fromIntegral n)
   timestamp <- rtmidi_in_get_message dptr m s
   guardError dptr
   size <- peek s
@@ -240,6 +237,14 @@ getMessage d = allocaArray maxMessageSize $ flip with $ \m -> alloca $ \s -> do
         y <- peekArray (fromIntegral size) x
         pure (coerce y)
   pure (message, toEnum (fromEnum timestamp))
+
+-- | Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
+--
+-- This function returns immediately whether a new message is available or not.
+-- A valid message is indicated by whether the list contains any elements.
+-- Note that large sysex messages will be silently dropped! Use 'getMessageSized' or use a callback to get these safely.
+getMessage :: InputDevice -> IO ([Word8], Double)
+getMessage d = getMessageSized d defaultMessageSize
 
 -- | Default constructor for a 'Device' to use for output.
 defaultOutput :: IO OutputDevice
