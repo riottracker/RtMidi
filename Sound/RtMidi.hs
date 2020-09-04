@@ -13,6 +13,7 @@ module Sound.RtMidi
   , closePort
   , portCount
   , portName
+  , listPorts
   , defaultInput
   , createInput
   , setCallback
@@ -163,13 +164,30 @@ portCount d = do
 
 -- | Return a string identifier for the specified MIDI port number.
 --
--- An empty string is returned if an invalid port specifier is provided.
-portName :: IsDevice d => d -> Int -> IO String
+-- 'Nothing' is returned if an invalid port specifier is provided.
+portName :: IsDevice d => d -> Int -> IO (Maybe String)
 portName d n = do
   let dptr = toDevicePtr d
   x <- rtmidi_get_port_name dptr (toEnum n)
   guardError dptr
-  peekCString x
+  s <- peekCString x
+  case s of
+    [] -> pure Nothing
+    _ -> pure (Just s)
+
+-- | Convenience function to list ports.
+--
+-- Note that the underlying library does not offer an "atomic" interface for this
+-- so results may be inconsistent if you connect/disconnect ports during this call.
+listPorts :: IsDevice d => d -> IO [(Int, String)]
+listPorts d = portCount d >>= go [] 0 where
+  go acc i c =
+    if i >= c
+      then pure (reverse acc)
+      else do
+        mn <- portName d i
+        let acc' = maybe acc (\n -> (i, n):acc) mn
+        go acc' (succ i) c
 
 -- | Default constructor for a 'Device' to use for input.
 defaultInput :: IO InputDevice
