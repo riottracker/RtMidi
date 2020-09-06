@@ -30,8 +30,8 @@ jobs:
           keys:
             - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
       - run:
-          name: Run tests
-          command: stack test --flag RtMidi:jack
+          name: Build project
+          command: stack build --flag RtMidi:jack
       - save_cache:
           name: Cache dependencies
           key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
@@ -57,9 +57,6 @@ jobs:
       - run:
           name: Build project
           command: cabal build -fjack
-      - run:
-          name: Run tests
-          command: cabal test
       - save_cache:
           name: Cache dependencies
           key: cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
