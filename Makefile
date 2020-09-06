@@ -24,6 +24,9 @@ lint:
 	# Run hlint over our haskell source
 	stack exec -- hlint -i 'Parse error' -i 'Reduce duplication' Sound
 
+# Dockerized dev targets follow. Yes, this is built into stack, but
+# It's defined here to use for cabal too.
+
 .PHONY: docker-build
 docker-build:
 	# Build a development image for testing builds on linux

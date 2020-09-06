@@ -102,6 +102,18 @@ executable rtmidi-query
   default-language:   Haskell2010
   ghc-options: -threaded -rtsopts
 
+test-suite rtmidi-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs: test
+  build-depends:
+      base
+    , RtMidi
+    , tasty >= 1.2.3 && < 2
+    , tasty-hunit >= 0.10.0.2 && < 1
+  default-language:   Haskell2010
+  ghc-options: -threaded -rtsopts
+
 source-repository head
   type:     git
   location: https://github.com/riottracker/RtMidi
