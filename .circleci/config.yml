@@ -13,7 +13,7 @@ commands:
     steps:
     - run:
         name: Install apt
-        command: "apt-get update && apt-get install -y $(cat docker/packages.txt)"
+        command: if [ -f docker/packages.txt ]; then apt-get update && apt-get install -y $(cat docker/packages.txt); fi
 
 jobs:
   stack_build:
@@ -23,8 +23,8 @@ jobs:
     docker:
       - image: haskell:<< parameters.lts_ghc_ver >>
     steps:
-      - install_native_deps
       - checkout
+      - install_native_deps
       - restore_cache:
           name: Restore cached dependencies
           keys:
@@ -45,8 +45,8 @@ jobs:
     docker:
       - image: haskell:<< parameters.ghc_ver >>
     steps:
-      - install_native_deps
       - checkout
+      - install_native_deps
       - restore_cache:
           name: Restore cached dependencies
           keys:
