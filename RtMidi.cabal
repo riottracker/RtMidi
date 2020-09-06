@@ -44,6 +44,7 @@ library
   exposed-modules:     Sound.RtMidi
   other-modules:       Sound.RtMidi.Foreign
   build-depends:       base >=4.9 && <4.15
+                     , unliftio-core >= 0.1.2.0 && < 1
   default-language:    Haskell2010
   include-dirs:        rtmidi
   extra-libraries:     stdc++
