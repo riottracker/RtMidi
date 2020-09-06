@@ -13,12 +13,14 @@ module Sound.RtMidi
   , closePort
   , portCount
   , portName
+  , listPorts
   , defaultInput
   , createInput
   , setCallback
   , cancelCallback
   , ignoreTypes
   , getMessage
+  , getMessageSized
   , defaultOutput
   , createOutput
   , sendMessage
@@ -30,17 +32,17 @@ import Control.Exception (Exception, throwIO)
 import Control.Monad (unless)
 import Data.Coerce (coerce)
 import Data.Word (Word8)
-import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, allocaBytes, nullPtr, peekArray, with, withArrayLen)
+import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray, with, withArrayLen)
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
 import Sound.RtMidi.Foreign
 
+-- The default message size (in bytes) expected from 'getMessage'
 -- Mostly just needs to be bigger than the max MIDI message size, which is 3 bytes
--- However, sysex messages can be quite large...
--- (This quantity is in bytes)
--- TODO(ejconlon) Allow this to be configurable.
-maxMessageSize :: Int
-maxMessageSize = 4
+-- However, sysex messages can be quite large, so you might have to use the 'getMessageSized' variant.
+defaultMessageSize :: Int
+defaultMessageSize = 4
 
+-- | Allows us to discriminate in/out functions in generic contexts
 data DeviceType =
     InputDeviceType
   | OutputDeviceType
@@ -49,6 +51,7 @@ data DeviceType =
 newtype Device = Device { unDevice :: Ptr Wrapper }
   deriving (Eq, Show)
 
+-- | Generalizes 'InputDevice' and 'OutputDevice' for use in common functions
 class IsDevice d where
   toDevice :: d -> Device
   getDeviceType :: d -> DeviceType
@@ -56,6 +59,7 @@ class IsDevice d where
 toDevicePtr :: IsDevice d => d -> Ptr Wrapper
 toDevicePtr = unDevice . toDevice
 
+-- | A handle to a device to be used for input
 newtype InputDevice = InputDevice { unInputDevice :: Device }
   deriving (Eq, Show)
 
@@ -63,6 +67,7 @@ instance IsDevice InputDevice where
   toDevice = unInputDevice
   getDeviceType _ = InputDeviceType
 
+-- | A handle to a device to be used for input
 newtype OutputDevice = OutputDevice { unOutputDevice :: Device }
   deriving (Eq, Show)
 
@@ -70,6 +75,7 @@ instance IsDevice OutputDevice where
   toDevice = unOutputDevice
   getDeviceType _ = OutputDeviceType
 
+-- | Enum of RtMidi-supported APIs
 data Api
   = UnspecifiedApi
   | CoreMidiApi
@@ -102,6 +108,7 @@ ready = fmap ok . peek  . toDevicePtr
 newtype Error = Error String deriving (Eq, Show)
 instance Exception Error
 
+-- Detects and throws internal errors
 guardError :: Ptr Wrapper -> IO ()
 guardError dptr = do
   w <- peek dptr
@@ -111,11 +118,13 @@ guardError dptr = do
 
 -- | A static function to determine MIDI 'Api's built in.
 compiledApis :: IO [Api]
-compiledApis = fmap (map (toEnum . fromEnum)) $ do
-  n <- fromIntegral <$> rtmidi_get_compiled_api nullPtr
-  allocaArray n $ flip with $ \ptr -> do
+compiledApis = do
+  n <- fmap fromIntegral (rtmidi_get_compiled_api nullPtr)
+  as <- allocaArray n $ flip with $ \ptr -> do
     rtmidi_get_compiled_api ptr
-    peekArray n =<< peek ptr
+    x <- peek ptr
+    peekArray n x
+  pure (map (toEnum . fromEnum) as)
 
 -- | Open a MIDI connection
 openPort :: IsDevice d
@@ -155,13 +164,30 @@ portCount d = do
 
 -- | Return a string identifier for the specified MIDI port number.
 --
--- An empty string is returned if an invalid port specifier is provided.
-portName :: IsDevice d => d -> Int -> IO String
+-- 'Nothing' is returned if an invalid port specifier is provided.
+portName :: IsDevice d => d -> Int -> IO (Maybe String)
 portName d n = do
   let dptr = toDevicePtr d
   x <- rtmidi_get_port_name dptr (toEnum n)
   guardError dptr
-  peekCString x
+  s <- peekCString x
+  case s of
+    [] -> pure Nothing
+    _ -> pure (Just s)
+
+-- | Convenience function to list ports.
+--
+-- Note that the underlying library does not offer an "atomic" interface for this
+-- so results may be inconsistent if you connect/disconnect ports during this call.
+listPorts :: IsDevice d => d -> IO [(Int, String)]
+listPorts d = portCount d >>= go [] 0 where
+  go acc i c =
+    if i >= c
+      then pure (reverse acc)
+      else do
+        mn <- portName d i
+        let acc' = maybe acc (\n -> (i, n):acc) mn
+        go acc' (succ i) c
 
 -- | Default constructor for a 'Device' to use for input.
 defaultInput :: IO InputDevice
@@ -221,15 +247,12 @@ ignoreTypes :: InputDevice
             -> IO ()
 ignoreTypes = rtmidi_in_ignore_types . toDevicePtr
 
--- | Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
---
--- This function returns immediately whether a new message is available or not.
--- A valid message is indicated by whether the list contains any elements.
-getMessage :: InputDevice -> IO ([Word8], Double)
-getMessage d = allocaArray maxMessageSize $ flip with $ \m -> alloca $ \s -> do
+-- | Variant of 'getMessage' that allows you to set message buffer size (typically for large sysex messages).
+getMessageSized :: InputDevice -> Int -> IO (Double, [Word8])
+getMessageSized d n = alloca $ \s -> allocaArray n $ flip with $ \m -> do
   let dptr = toDevicePtr d
-  poke s (fromIntegral maxMessageSize)
-  timestamp <- rtmidi_in_get_message dptr m s
+  poke s (fromIntegral n)
+  CDouble timestamp <- rtmidi_in_get_message dptr m s
   guardError dptr
   size <- peek s
   message <-
@@ -239,7 +262,15 @@ getMessage d = allocaArray maxMessageSize $ flip with $ \m -> alloca $ \s -> do
         x <- peek m
         y <- peekArray (fromIntegral size) x
         pure (coerce y)
-  pure (message, toEnum (fromEnum timestamp))
+  pure (timestamp, message)
+
+-- | Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
+--
+-- This function returns immediately whether a new message is available or not.
+-- A valid message is indicated by whether the list contains any elements.
+-- Note that large sysex messages will be silently dropped! Use 'getMessageSized' or use a callback to get these safely.
+getMessage :: InputDevice -> IO (Double, [Word8])
+getMessage d = getMessageSized d defaultMessageSize
 
 -- | Default constructor for a 'Device' to use for output.
 defaultOutput :: IO OutputDevice

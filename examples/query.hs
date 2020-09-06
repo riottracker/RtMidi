@@ -1,14 +1,12 @@
-import Sound.RtMidi (closeDevice, compiledApis, createOutput, currentApi, defaultOutput, portCount, portName)
+import Sound.RtMidi (closeDevice, compiledApis, createOutput, currentApi, defaultOutput, listPorts)
 
 main :: IO ()
 main = do
   device <- defaultOutput
   api <- currentApi device
   builtin <- compiledApis
-  numPorts <- portCount device
-  portNames <- mapM (portName device) [0..numPorts-1]
+  portPairs <- listPorts device
   putStrLn $ "RtMidi output using " ++ (show api)
   putStrLn $ "built-in: " ++ (show builtin)
-  putStrLn $ "available Ports: " ++ (show numPorts)
-  putStrLn (show portNames)
+  putStrLn $ "available ports: " ++ (show portPairs)
   closeDevice device

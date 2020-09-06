@@ -5,7 +5,7 @@ import Control.Monad (forever)
 mainLoop :: InputDevice -> IO ()
 mainLoop d = do
   m <- getMessage d
-  if length (fst m) > 0 then
+  if length (snd m) > 0 then
     putStrLn $ show m
   else return ()
 
