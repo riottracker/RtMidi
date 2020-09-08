@@ -14,7 +14,7 @@ module Sound.RtMidi
   , portCount
   , portName
   , listPorts
-  , lookupPort
+  , findPort
   , defaultInput
   , createInput
   , setCallback
@@ -192,19 +192,25 @@ listPorts d = liftIO $ portCount d >>= go [] 0 where
         let acc' = maybe acc (\n -> (i, n):acc) mn
         go acc' (succ i) c
 
--- | Convenience function to lookup port by name.
+-- | Convenience function to lookup the first port satisfying the predicate.
+--
+-- You may want to find an exact name:
+-- > findPort d (== name)
+--
+-- Or you may want to match part of a name:
+-- > findPort d (isInfixOf name)
 --
 -- Note that if you are performing many lookups, it's better to use 'listPorts' and
 -- do the lookups yourself (see the caveats there too).
-lookupPort :: (MonadIO m, IsDevice d) => d -> String -> m (Maybe Int)
-lookupPort d x = liftIO $ portCount d >>= go 0 where
+findPort :: (MonadIO m, IsDevice d) => d -> (String -> Bool) -> m (Maybe Int)
+findPort d f = liftIO $ portCount d >>= go 0 where
   go i c =
     if i >= c
       then pure Nothing
       else do
         mn <- portName d i
         case mn of
-          Just n | x == n -> pure (Just i)
+          Just n | f n -> pure (Just i)
           _ -> go (succ i) c
 
 -- | Default constructor for a 'Device' to use for input.
