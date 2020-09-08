@@ -29,10 +29,10 @@ module Sound.RtMidi
   , currentApi
   ) where
 
-import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.IO.Unlift (MonadUnliftIO (..))
 import Control.Exception (Exception, throwIO)
 import Control.Monad (unless)
+import Control.Monad.IO.Class (MonadIO (..))
+import Control.Monad.IO.Unlift (MonadUnliftIO (..))
 import Data.Coerce (coerce)
 import Data.Word (Word8)
 import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray, with, withArrayLen)
