@@ -3,7 +3,7 @@ module Main (main) where
 import Control.Concurrent (threadDelay)
 import Control.Monad (replicateM_)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
-import Data.List (find, isInfixOf)
+import Data.List (isInfixOf)
 import Data.Word (Word8)
 import Sound.RtMidi (closeDevice, closePort, defaultInput, defaultOutput, findPort, sendMessage, setCallback, openPort, openVirtualPort)
 import Test.Tasty (TestTree, defaultMain, testGroup)
