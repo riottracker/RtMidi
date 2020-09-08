@@ -195,9 +195,11 @@ listPorts d = liftIO $ portCount d >>= go [] 0 where
 -- | Convenience function to lookup the first port satisfying the predicate.
 --
 -- You may want to find an exact name:
+--
 -- > findPort d (== name)
 --
 -- Or you may want to match part of a name:
+--
 -- > findPort d (isInfixOf name)
 --
 -- Note that if you are performing many lookups, it's better to use 'listPorts' and
