@@ -33,4 +33,3 @@ even then you'd probably have to start the process with something like `docker r
 
 * Add Windows MM support. This should only require a few changes to the Cabal file.
 * See if there is a way to autodetect Jack in the Cabal file.
-* Publish new version to Hackage and eventually Stackage.
