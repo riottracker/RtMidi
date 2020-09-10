@@ -12,8 +12,8 @@ commands:
   install_native_deps:
     steps:
     - run:
-      name: Install apt
-      command: "apt-get update && apt-get install -y $(cat docker/packages.txt)"
+        name: Install apt
+        command: if [ -f docker/packages.txt ]; then apt-get update && apt-get install -y $(cat docker/packages.txt); fi
 
 jobs:
   stack_build:
@@ -23,15 +23,15 @@ jobs:
     docker:
       - image: haskell:<< parameters.lts_ghc_ver >>
     steps:
-      - install_native_deps
       - checkout
+      - install_native_deps
       - restore_cache:
           name: Restore cached dependencies
           keys:
             - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
       - run:
-          name: Run tests
-          command: stack test --flag RtMidi:jack
+          name: Build project
+          command: stack build --flag RtMidi:jack
       - save_cache:
           name: Cache dependencies
           key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
@@ -45,8 +45,8 @@ jobs:
     docker:
       - image: haskell:<< parameters.ghc_ver >>
     steps:
-      - install_native_deps
       - checkout
+      - install_native_deps
       - restore_cache:
           name: Restore cached dependencies
           keys:
@@ -57,9 +57,6 @@ jobs:
       - run:
           name: Build project
           command: cabal build -fjack
-      - run:
-          name: Run tests
-          command: cabal test
       - save_cache:
           name: Cache dependencies
           key: cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
