@@ -24,6 +24,13 @@ lint:
 	# Run hlint over our haskell source
 	stack exec -- hlint -i 'Parse error' -i 'Reduce duplication' Sound
 
+.PHONY: upload-docs
+upload-docs:
+	# Upload docs to hackage
+	cabal test
+	cabal haddock --haddock-for-hackage --haddock-option=--hyperlinked-source
+	cabal upload  --publish -d dist-newstyle/RtMidi-*-docs.tar.gz
+
 # Dockerized dev targets follow. Yes, this is built into stack, but
 # It's defined here to use for cabal too.
 
