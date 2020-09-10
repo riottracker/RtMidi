@@ -1,5 +1,7 @@
 # RtMidi
 
+[![CircleCI](https://circleci.com/gh/riottracker/RtMidi/tree/master.svg?style=svg)](https://circleci.com/gh/riottracker/RtMidi/tree/master)
+
 Haskell wrapper for [RtMidi](http://www.music.mcgill.ca/~gary/rtmidi/), the lightweight, cross-platform MIDI I/O library.
 
 ## Development
