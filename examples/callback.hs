@@ -1,5 +1,5 @@
 import Data.Word (Word8)
-import Sound.RtMidi (closeDevice, closePort, defaultInput, openPort, setCallback)
+import Sound.RtMidi (closePort, defaultInput, openPort, setCallback)
 import Numeric (showHex)
 
 callback :: Double -> [Word8] -> IO ()
@@ -12,5 +12,4 @@ main = do
   setCallback i callback
   _ <- getLine
   closePort i
-  closeDevice i
   return ()

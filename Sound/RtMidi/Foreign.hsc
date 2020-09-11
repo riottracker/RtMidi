@@ -73,8 +73,8 @@ foreign import ccall "rtmidi_c.h rtmidi_in_create"
 foreign import ccall "rtmidi_c.h rtmidi_in_create_default"
   rtmidi_in_create_default :: IO (Ptr Wrapper)
 
-foreign import ccall "rtmidi_c.h rtmidi_in_free"
-  rtmidi_in_free :: Ptr Wrapper -> IO ()
+foreign import ccall "rtmidi_c.h &rtmidi_in_free"
+  rtmidi_in_free :: FunPtr (Ptr Wrapper -> IO ())
 
 foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
   rtmidi_in_get_current_api :: Ptr Wrapper -> IO CInt
@@ -100,8 +100,8 @@ foreign import ccall "rtmidi_c.h rtmidi_out_create"
 foreign import ccall "rtmidi_c.h rtmidi_out_create_default"
   rtmidi_out_create_default :: IO (Ptr Wrapper)
 
-foreign import ccall "rtmidi_c.h rtmidi_out_free"
-  rtmidi_out_free :: Ptr Wrapper -> IO ()
+foreign import ccall "rtmidi_c.h &rtmidi_out_free"
+  rtmidi_out_free :: FunPtr (Ptr Wrapper -> IO ())
 
 foreign import ccall "rtmidi_c.h rtmidi_out_get_current_api"
   rtmidi_out_get_current_api :: Ptr Wrapper -> IO CInt

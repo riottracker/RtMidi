@@ -1,4 +1,4 @@
-import Sound.RtMidi (InputDevice, closeDevice, closePort, defaultInput, getMessage, openPort)
+import Sound.RtMidi (InputDevice, closePort, defaultInput, getMessage, openPort)
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad (forever)
 
@@ -17,5 +17,4 @@ main = do
   _ <- getLine
   killThread id
   closePort i
-  closeDevice i
   return ()
