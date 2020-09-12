@@ -5,7 +5,7 @@ import Control.Monad (replicateM_)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
 import Data.List (isInfixOf)
 import Data.Word (Word8)
-import Sound.RtMidi (closeDevice, closePort, defaultInput, defaultOutput, findPort, sendMessage, setCallback, openPort, openVirtualPort)
+import Sound.RtMidi (closePort, defaultInput, defaultOutput, findPort, sendMessage, setCallback, openPort, openVirtualPort)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 
@@ -39,10 +39,8 @@ testVirtualReadWrite = testCase "virtual read write" $ do
   threadDelay delayUs
   -- Close writer
   closePort outDev
-  closeDevice outDev
   -- Close reader
   closePort inDev
-  closeDevice inDev
   -- Verify number of messages received
   actualCount <- readIORef countRef
   actualCount @?= expectedCount

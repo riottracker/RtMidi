@@ -1,4 +1,4 @@
-import Sound.RtMidi (closeDevice, compiledApis, createOutput, currentApi, defaultOutput, listPorts)
+import Sound.RtMidi (compiledApis, createOutput, currentApi, defaultOutput, listPorts)
 
 main :: IO ()
 main = do
@@ -9,4 +9,3 @@ main = do
   putStrLn $ "RtMidi output using " ++ (show api)
   putStrLn $ "built-in: " ++ (show builtin)
   putStrLn $ "available ports: " ++ (show portPairs)
-  closeDevice device
