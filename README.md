@@ -11,7 +11,6 @@ This project is tested with Cabal (latest versions of last two compiler lines) a
 You can get started with development like so:
 
     # Build on OSX CoreMIDI support or Linux with ALSA support
-    # You can also pass `--flag RtMidi:jack` for Jack support
     stack build
 
     # Verify that it works:
@@ -34,4 +33,3 @@ even then you'd probably have to start the process with something like `docker r
 ## TODO
 
 * Add Windows MM support. This should only require a few changes to the Cabal file.
-* See if there is a way to autodetect Jack in the Cabal file.

@@ -18,16 +18,6 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 license:             MIT
 
-Flag alsa {
-  Description:  Enable ALSA sequencer api
-  Default:      True
-}
-
-Flag jack {
-  Description:  Enable JACK api
-  Default:      False
-}
-
 library
   exposed-modules:     Sound.RtMidi
   other-modules:       Sound.RtMidi.Foreign
@@ -42,15 +32,8 @@ library
   -- TODO(ejconlon) Add windows support
 
   if os(linux)
-    if flag(alsa) && flag(jack)
-      cc-options:       -D__LINUX_ALSA__ -D__UNIX_JACK__
-      extra-libraries:  asound pthread jack
-    if flag(alsa) && !flag(jack)
-      cc-options:       -D__LINUX_ALSA__
-      extra-libraries:  asound pthread
-    if !flag(alsa) && flag(jack)
-      cc-options:       -D__UNIX_JACK__
-      extra-libraries:  jack
+    cc-options:       -D__LINUX_ALSA__
+    extra-libraries:  asound pthread
 
   if os(darwin)
     cc-options:       -D__MACOSX_CORE__
