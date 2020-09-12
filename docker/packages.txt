@@ -1,1 +1,1 @@
-libasound2-dev libjack-dev
+libasound2-dev
