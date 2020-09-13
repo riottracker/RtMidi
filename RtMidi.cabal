@@ -19,12 +19,12 @@ cabal-version:       >=1.10
 license:             MIT
 
 Flag alsa {
-  Description:  Enable ALSA sequencer api
+  Description:  Enable ALSA sequencer api on Linux
   Default:      True
 }
 
 Flag jack {
-  Description:  Enable JACK api
+  Description:  Enable JACK api on Linux or OSX
   Default:      False
 }
 
@@ -53,7 +53,11 @@ library
       extra-libraries:  jack
 
   if os(darwin)
-    cc-options:       -D__MACOSX_CORE__
+    if flag(jack)
+      cc-options:       -D__MACOSX_CORE__ -D__UNIX_JACK__
+      extra-libraries:  jack
+    else
+      cc-options:       -D__MACOSX_CORE__
     frameworks:       CoreMIDI CoreAudio CoreFoundation
     -- NOTE(ejconlon) This is to make the c ffi wrapper actually catch
     -- the c++ exceptions instead of simply aborting.

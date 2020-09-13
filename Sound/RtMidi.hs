@@ -138,11 +138,10 @@ ready d = liftIO (withDevicePtr d (fmap ok . peek))
 -- | A static function to determine MIDI 'Api's built in.
 compiledApis :: MonadIO m => m [Api]
 compiledApis = liftIO $ do
-  n <- fmap fromIntegral (rtmidi_get_compiled_api nullPtr)
-  as <- allocaArray n $ flip with $ \ptr -> do
-    rtmidi_get_compiled_api ptr
-    x <- peek ptr
-    peekArray n x
+  n <- fmap fromIntegral (rtmidi_get_compiled_api nullPtr 0)
+  as <- allocaArray n $ \ptr -> do
+    rtmidi_get_compiled_api ptr (fromIntegral n)
+    peekArray n ptr
   pure (map (toEnum . fromIntegral) as)
 
 -- | Open a MIDI connection

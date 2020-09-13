@@ -1,13 +1,13 @@
 module Main (main) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (replicateM_)
+import Control.Monad (replicateM_, unless, when)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
 import Data.List (isInfixOf)
 import Data.Word (Word8)
-import Sound.RtMidi (closePort, defaultInput, defaultOutput, findPort, sendMessage, setCallback, openPort, openVirtualPort)
+import Sound.RtMidi (Api (..), closePort, compiledApis, createInput, createOutput, currentApi, findPort, sendMessage, setCallback, openPort, openVirtualPort)
 import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Tasty.HUnit (assertFailure, testCase, (@?=))
 
 incIORef :: IORef Int -> IO ()
 incIORef = flip modifyIORef succ
@@ -15,8 +15,8 @@ incIORef = flip modifyIORef succ
 readerCallback :: IORef Int -> Double -> [Word8] -> IO ()
 readerCallback countRef _ msg = incIORef countRef
 
-testVirtualReadWrite :: TestTree
-testVirtualReadWrite = testCase "virtual read write" $ do
+testVirtualReadWrite :: Api -> TestTree
+testVirtualReadWrite api = testCase ("virtual read write with " <> show api) $ do
   let expectedCount = 3
       -- a simple note-on message
       message = [0x90, 0x51, 0x7f]
@@ -25,11 +25,15 @@ testVirtualReadWrite = testCase "virtual read write" $ do
       delayUs = 10000
   countRef <- newIORef 0
   -- Create reader with callback
-  inDev <- defaultInput
+  inDev <- createInput api "rtmidi-test-input" 100
+  inApi <- currentApi inDev
+  inApi @?= api
   setCallback inDev (readerCallback countRef)
   openVirtualPort inDev portName
   -- Create writer and connect to reader virtual port
-  outDev <- defaultOutput
+  outDev <- createOutput api "rtmidi-test-output"
+  outApi <- currentApi outDev
+  outApi @?= api
   maybePortNum <- findPort outDev (isInfixOf portName)
   let portNum = maybe (error "Could not find port") id maybePortNum
   openPort outDev portNum portName
@@ -46,4 +50,8 @@ testVirtualReadWrite = testCase "virtual read write" $ do
   actualCount @?= expectedCount
 
 main :: IO ()
-main = defaultMain (testGroup "RtMidi" [testVirtualReadWrite])
+main = do
+  apis <- compiledApis
+  when (null apis) (assertFailure "No compiled APIs found")
+  let tests = fmap testVirtualReadWrite apis
+  defaultMain (testGroup "RtMidi" tests)
