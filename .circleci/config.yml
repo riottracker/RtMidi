@@ -6,7 +6,7 @@ parameters:
     default: "RtMidi"
   cache_ver:
     type: string
-    default: "v1"
+    default: "v3"
 
 commands:
   install_native_deps:
@@ -31,7 +31,7 @@ jobs:
             - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
       - run:
           name: Build project
-          command: stack build --flag RtMidi:jack
+          command: stack build
       - save_cache:
           name: Cache dependencies
           key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
@@ -56,7 +56,7 @@ jobs:
           command: cabal update
       - run:
           name: Build project
-          command: cabal build -fjack
+          command: cabal build
       - save_cache:
           name: Cache dependencies
           key: cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
