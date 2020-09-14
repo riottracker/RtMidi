@@ -26,7 +26,7 @@ There is also a `Dockerfile` in the `docker` directory and some `make` targets t
     make docker-repl
 
     # Inside the docker image:
-    cabal update && cabal build -fjack
+    cabal update && cabal build
 
 (Note that you can't use any `RtMidi` functions in the containerized env unless you are running a Linux host, and
 even then you'd probably have to start the process with something like `docker run --device /dev/snd`.)
