@@ -31,7 +31,10 @@ jobs:
             - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
       - run:
           name: Build project
-          command: stack build
+          command: stack build --test --no-run-tests
+      - run:
+          name: Test project
+          command: stack test
       - save_cache:
           name: Cache dependencies
           key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
@@ -57,6 +60,9 @@ jobs:
       - run:
           name: Build project
           command: cabal build
+      - run:
+          name: Test project
+          command: cabal test
       - save_cache:
           name: Cache dependencies
           key: cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
