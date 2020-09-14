@@ -21,8 +21,8 @@ testVirtualReadWrite api = testCase ("virtual read write with " <> show api) $ d
       -- a simple note-on message
       message = [0x90, 0x51, 0x7f]
       portName = "rtmidi-test-port"
-      -- 0.01 second delay in us
-      delayUs = 10000
+      -- 100 ms delay in us
+      delayUs = 100000
   countRef <- newIORef 0
   -- Create reader with callback
   inDev <- createInput api "rtmidi-test-input" 100
