@@ -10,6 +10,7 @@ module Sound.RtMidi
   , Error (..)
   , apiName
   , apiDisplayName
+  , compiledApiByName
   , ready
   , compiledApis
   , openPort
@@ -119,6 +120,10 @@ apiDisplayName api = liftIO (rtmidi_api_display_name (fromApi api) >>= peekCStri
 -- | Get the internal name for the given 'Api'.
 apiName :: MonadIO m => Api -> m String
 apiName api = liftIO (rtmidi_api_name (fromApi api) >>= peekCString)
+
+-- | Lookup a compiled 'Api' by name.
+compiledApiByName :: MonadIO m => String -> m Api
+compiledApiByName name = liftIO (fmap toApi (withCString name rtmidi_compiled_api_by_name))
 
 -- | Check if a device is ok
 ready :: (MonadIO m, IsDevice d) => d -> m Bool

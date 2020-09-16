@@ -11,6 +11,7 @@ module Sound.RtMidi.Foreign
   , rtmidi_api_display_name
   , rtmidi_api_name
   , rtmidi_close_port
+  , rtmidi_compiled_api_by_name
   , rtmidi_get_compiled_api
   , rtmidi_get_port_count
   , rtmidi_get_port_name
@@ -68,7 +69,6 @@ data Api
   | AlsaApi
   | JackApi
   | MultimediaApi
-  | KernelStreamingApi
   | DummyApi
   deriving stock (Eq, Show, Ord, Enum, Bounded, Generic)
   deriving anyclass (NFData)
@@ -90,6 +90,9 @@ foreign import ccall "rtmidi_c.h rtmidi_api_name"
 
 foreign import ccall "rtmidi_c.h rtmidi_close_port"
   rtmidi_close_port :: Ptr Wrapper -> IO ()
+
+foreign import ccall "rtmidi_c.h rtmidi_compiled_api_by_name"
+  rtmidi_compiled_api_by_name :: CString -> IO ApiInternal
 
 foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
   rtmidi_get_compiled_api :: Ptr ApiInternal -> CUInt -> IO CInt
