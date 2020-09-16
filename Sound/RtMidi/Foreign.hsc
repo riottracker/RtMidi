@@ -8,6 +8,8 @@ module Sound.RtMidi.Foreign
   , ApiInternal
   , toApi
   , fromApi
+  , rtmidi_api_display_name
+  , rtmidi_api_name
   , rtmidi_close_port
   , rtmidi_get_compiled_api
   , rtmidi_get_port_count
@@ -79,6 +81,12 @@ toApi = toEnum . fromIntegral . unApiInternal
 
 fromApi :: Api -> ApiInternal
 fromApi = ApiInternal . fromIntegral . fromEnum
+
+foreign import ccall "rtmidi_c.h rtmidi_api_display_name"
+  rtmidi_api_display_name :: ApiInternal -> IO CString
+
+foreign import ccall "rtmidi_c.h rtmidi_api_name"
+  rtmidi_api_name :: ApiInternal -> IO CString
 
 foreign import ccall "rtmidi_c.h rtmidi_close_port"
   rtmidi_close_port :: Ptr Wrapper -> IO ()

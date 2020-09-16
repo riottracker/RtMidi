@@ -8,6 +8,8 @@ module Sound.RtMidi
   , DeviceType (..)
   , Api (..)
   , Error (..)
+  , apiName
+  , apiDisplayName
   , ready
   , compiledApis
   , openPort
@@ -87,7 +89,6 @@ instance IsDevice OutputDevice where
 newOutputDevice :: Ptr Wrapper -> IO OutputDevice
 newOutputDevice = fmap (OutputDevice . Device) . newForeignPtr rtmidi_out_free
 
-
 -- | An internal RtMidi error
 newtype Error = Error { unError :: String }
   deriving stock (Eq, Show, Generic)
@@ -110,6 +111,14 @@ withDevicePtrUnguarded = withForeignPtr . unDevice . toDevice
 -- Operate on the underlying device ptr and guard for errors
 withDevicePtr :: IsDevice d => d -> (Ptr Wrapper -> IO a) -> IO a
 withDevicePtr d f = withDevicePtrUnguarded d (\dptr -> f dptr <* guardError dptr)
+
+-- | Get the display name for the given 'Api'.
+apiDisplayName :: MonadIO m => Api -> m String
+apiDisplayName api = liftIO (rtmidi_api_display_name (fromApi api) >>= peekCString)
+
+-- | Get the internal name for the given 'Api'.
+apiName :: MonadIO m => Api -> m String
+apiName api = liftIO (rtmidi_api_name (fromApi api) >>= peekCString)
 
 -- | Check if a device is ok
 ready :: (MonadIO m, IsDevice d) => d -> m Bool

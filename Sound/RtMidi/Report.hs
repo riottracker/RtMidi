@@ -13,17 +13,21 @@ import Sound.RtMidi
 
 data ApiReport = ApiReport
   { apiRepApi :: !Api
+  , apiRepName :: !String
+  , apiRepDisplayName :: !String
   } deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
-data Report = Report
-  { apiReports :: ![ApiReport]
+newtype Report = Report
+  { apiReports :: [ApiReport]
   } deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
 buildApiReport :: MonadIO m => Api -> m ApiReport
 buildApiReport api = do
-  pure (ApiReport api)
+  name <- apiName api
+  displayName <- apiDisplayName api
+  pure (ApiReport api name displayName)
 
 buildReport :: MonadIO m => m Report
 buildReport = do
