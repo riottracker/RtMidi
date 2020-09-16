@@ -1,9 +1,13 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 -- | FFI defs for RtMidi
 module Sound.RtMidi.Foreign
   ( Wrapper (..)
+  , Api (..)
+  , ApiInternal
+  , toApi
+  , fromApi
   , rtmidi_close_port
   , rtmidi_get_compiled_api
   , rtmidi_get_port_count
@@ -27,15 +31,18 @@ module Sound.RtMidi.Foreign
 
 #include "rtmidi_c.h"
 
+import Control.DeepSeq (NFData)
 import Foreign (FunPtr, Ptr, Storable (..))
 import Foreign.C (CDouble (..), CInt (..), CString, CSize, CUChar, CUInt (..))
+import GHC.Generics (Generic)
 
 data Wrapper = Wrapper
   { ptr :: !(Ptr ())
   , dat :: !(Ptr ())
   , ok  :: !Bool
   , msg :: !CString
-  } deriving (Eq, Show)
+  } deriving stock (Eq, Show, Generic)
+    deriving anyclass (NFData)
 
 instance Storable Wrapper where
   sizeOf _ = #{size struct RtMidiWrapper}
@@ -52,14 +59,32 @@ instance Storable Wrapper where
     d <- #{peek struct RtMidiWrapper, msg} ptr
     pure (Wrapper a b c d)
 
+-- | Enum of RtMidi-supported APIs
+data Api
+  = UnspecifiedApi
+  | CoreMidiApi
+  | AlsaApi
+  | JackApi
+  | MultimediaApi
+  | KernelStreamingApi
+  | DummyApi
+  deriving stock (Eq, Show, Ord, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
+
 -- A parameter we'll be de/serializing from the 'Api' enum.
-type ApiEnum = CInt
+newtype ApiInternal = ApiInternal { unApiInternal :: CInt } deriving newtype (Storable)
+
+toApi :: ApiInternal -> Api
+toApi = toEnum . fromIntegral . unApiInternal
+
+fromApi :: Api -> ApiInternal
+fromApi = ApiInternal . fromIntegral . fromEnum
 
 foreign import ccall "rtmidi_c.h rtmidi_close_port"
   rtmidi_close_port :: Ptr Wrapper -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_get_compiled_api"
-  rtmidi_get_compiled_api :: Ptr ApiEnum -> CUInt -> IO CInt
+  rtmidi_get_compiled_api :: Ptr ApiInternal -> CUInt -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_get_port_count"
   rtmidi_get_port_count :: Ptr Wrapper -> IO CUInt
@@ -71,7 +96,7 @@ foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
   rtmidi_in_cancel_callback :: Ptr Wrapper -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_in_create"
-  rtmidi_in_create :: ApiEnum -> CString -> CUInt -> IO (Ptr Wrapper)
+  rtmidi_in_create :: ApiInternal -> CString -> CUInt -> IO (Ptr Wrapper)
 
 foreign import ccall "rtmidi_c.h rtmidi_in_create_default"
   rtmidi_in_create_default :: IO (Ptr Wrapper)
@@ -80,7 +105,7 @@ foreign import ccall "rtmidi_c.h &rtmidi_in_free"
   rtmidi_in_free :: FunPtr (Ptr Wrapper -> IO ())
 
 foreign import ccall "rtmidi_c.h rtmidi_in_get_current_api"
-  rtmidi_in_get_current_api :: Ptr Wrapper -> IO ApiEnum
+  rtmidi_in_get_current_api :: Ptr Wrapper -> IO ApiInternal
 
 foreign import ccall "rtmidi_c.h rtmidi_in_get_message"
   rtmidi_in_get_message :: Ptr Wrapper -> Ptr (Ptr CUChar) -> Ptr CSize -> IO CDouble
@@ -98,7 +123,7 @@ foreign import ccall "rtmidi_c.h rtmidi_open_virtual_port"
   rtmidi_open_virtual_port :: Ptr Wrapper -> CString -> IO ()
 
 foreign import ccall "rtmidi_c.h rtmidi_out_create"
-  rtmidi_out_create :: ApiEnum-> CString -> IO (Ptr Wrapper)
+  rtmidi_out_create :: ApiInternal -> CString -> IO (Ptr Wrapper)
 
 foreign import ccall "rtmidi_c.h rtmidi_out_create_default"
   rtmidi_out_create_default :: IO (Ptr Wrapper)
@@ -107,7 +132,7 @@ foreign import ccall "rtmidi_c.h &rtmidi_out_free"
   rtmidi_out_free :: FunPtr (Ptr Wrapper -> IO ())
 
 foreign import ccall "rtmidi_c.h rtmidi_out_get_current_api"
-  rtmidi_out_get_current_api :: Ptr Wrapper -> IO ApiEnum
+  rtmidi_out_get_current_api :: Ptr Wrapper -> IO ApiInternal
 
 foreign import ccall "rtmidi_c.h rtmidi_out_send_message"
   rtmidi_out_send_message :: Ptr Wrapper -> Ptr CUChar -> CInt -> IO CInt

@@ -6,6 +6,7 @@ import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
 import Data.List (isInfixOf)
 import Data.Word (Word8)
 import Sound.RtMidi (Api (..), closePort, compiledApis, createInput, createOutput, currentApi, findPort, sendMessage, setCallback, openPort, openVirtualPort)
+import Sound.RtMidi.Report (Report, buildReport)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase, (@?=))
 
@@ -49,9 +50,14 @@ testVirtualReadWrite api = testCase ("virtual read write with " <> show api) $ d
   actualCount <- readIORef countRef
   actualCount @?= expectedCount
 
+testReport :: TestTree
+testReport = testCase "report" $ do
+  report <- buildReport
+  pure ()
+
 main :: IO ()
 main = do
   apis <- compiledApis
-  when (null apis) (assertFailure "No compiled APIs found")
-  let tests = fmap testVirtualReadWrite apis
-  defaultMain (testGroup "RtMidi" tests)
+  let rwTests = fmap testVirtualReadWrite (filter (/= DummyApi) apis)
+      rwGroup = testGroup "R/W" rwTests
+  defaultMain (testGroup "RtMidi" [testReport, rwGroup])

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 -- | Interface to RtMidi
 module Sound.RtMidi
   ( InputDevice
@@ -29,6 +31,7 @@ module Sound.RtMidi
   , currentApi
   ) where
 
+import Control.DeepSeq (NFData)
 import Control.Exception (Exception, throwIO)
 import Control.Monad (unless, void)
 import Control.Monad.IO.Class (MonadIO (..))
@@ -38,6 +41,7 @@ import Data.Word (Word8)
 import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray, with, withArrayLen)
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
 import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, withForeignPtr)
+import GHC.Generics (Generic)
 import Sound.RtMidi.Foreign
 
 -- The default message size (in bytes) expected from 'getMessage'
@@ -50,10 +54,11 @@ defaultMessageSize = 4
 data DeviceType =
     InputDeviceType
   | OutputDeviceType
-  deriving (Eq, Show)
+  deriving stock (Eq, Show, Ord, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 newtype Device = Device { unDevice :: ForeignPtr Wrapper }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 -- | Generalizes 'InputDevice' and 'OutputDevice' for use in common functions
 class IsDevice d where
@@ -62,7 +67,7 @@ class IsDevice d where
 
 -- | A handle to a device to be used for input
 newtype InputDevice = InputDevice { unInputDevice :: Device }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance IsDevice InputDevice where
   toDevice = unInputDevice
@@ -73,7 +78,7 @@ newInputDevice = fmap (InputDevice . Device) . newForeignPtr rtmidi_in_free
 
 -- | A handle to a device to be used for input
 newtype OutputDevice = OutputDevice { unOutputDevice :: Device }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance IsDevice OutputDevice where
   toDevice = unOutputDevice
@@ -82,37 +87,12 @@ instance IsDevice OutputDevice where
 newOutputDevice :: Ptr Wrapper -> IO OutputDevice
 newOutputDevice = fmap (OutputDevice . Device) . newForeignPtr rtmidi_out_free
 
--- | Enum of RtMidi-supported APIs
-data Api
-  = UnspecifiedApi
-  | CoreMidiApi
-  | AlsaApi
-  | JackApi
-  | MultimediaApi
-  | KernelStreamingApi
-  | DummyApi
-  deriving (Eq, Show)
-
-instance Bounded Api where
-  minBound = UnspecifiedApi
-  maxBound = DummyApi
-
-instance Enum Api where
-  fromEnum UnspecifiedApi = 0
-  fromEnum CoreMidiApi = 1
-  fromEnum AlsaApi = 2
-  fromEnum JackApi = 3
-  fromEnum MultimediaApi = 4
-  fromEnum DummyApi = 5
-  toEnum 0 = UnspecifiedApi
-  toEnum 1 = CoreMidiApi
-  toEnum 2 = AlsaApi
-  toEnum 3 = JackApi
-  toEnum 4 = MultimediaApi
-  toEnum 5 = DummyApi
 
 -- | An internal RtMidi error
-newtype Error = Error String deriving (Eq, Show)
+newtype Error = Error { unError :: String }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (NFData)
+
 instance Exception Error
 
 -- Detects and throws internal errors
@@ -142,7 +122,7 @@ compiledApis = liftIO $ do
   as <- allocaArray n $ \ptr -> do
     rtmidi_get_compiled_api ptr (fromIntegral n)
     peekArray n ptr
-  pure (map (toEnum . fromIntegral) as)
+  pure (map toApi as)
 
 -- | Open a MIDI connection
 openPort :: (MonadIO m, IsDevice d)
@@ -234,7 +214,7 @@ createInput :: MonadIO m
             -> Int        -- ^ size of the MIDI input queue
             -> m InputDevice
 createInput api clientName queueSizeLimit = liftIO $ do
-  dptr <- withCString clientName (\str -> rtmidi_in_create (fromIntegral (fromEnum api)) str (fromIntegral queueSizeLimit))
+  dptr <- withCString clientName (\str -> rtmidi_in_create (fromApi api) str (fromIntegral queueSizeLimit))
   guardError dptr
   newInputDevice dptr
 
@@ -325,7 +305,7 @@ createOutput :: MonadIO m
              -> String     -- ^ client name
              -> m OutputDevice
 createOutput api clientName = liftIO $ do
-  dptr <- withCString clientName (rtmidi_out_create (fromIntegral (fromEnum api)))
+  dptr <- withCString clientName (rtmidi_out_create (fromApi api))
   guardError dptr
   newOutputDevice dptr
 
@@ -341,4 +321,4 @@ currentApi d = liftIO $ withDevicePtr d $ \dptr -> do
     case getDeviceType d of
       InputDeviceType -> rtmidi_in_get_current_api dptr
       OutputDeviceType -> rtmidi_out_get_current_api dptr
-  pure (toEnum (fromIntegral res))
+  pure (toApi res)

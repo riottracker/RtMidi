@@ -14,6 +14,22 @@ install-dev-deps:
 	# Install some useful packages for development
 	stack build --copy-compiler-tool ghcid hlint stylish-haskell
 
+.PHONY: clean
+clean:
+	stack clean --full
+
+.PHONY: build
+build:
+	stack build --test --no-run-tests
+
+.PHONY: test
+test:
+	stack test
+
+.PHONY: example-report
+example-report: build
+	stack exec -- rtmidi-report
+
 .PHONY: format
 format:
 	# Run stylish-haskell to format our haskell source
@@ -30,16 +46,3 @@ upload-docs:
 	cabal test
 	cabal haddock --haddock-for-hackage --haddock-option=--hyperlinked-source
 	cabal upload  --publish -d dist-newstyle/RtMidi-*-docs.tar.gz
-
-# Dockerized dev targets follow. Yes, this is built into stack, but
-# It's defined here to use for cabal too.
-
-.PHONY: docker-build
-docker-build:
-	# Build a development image for testing builds on linux
-	cd docker && docker build -t haskell-rtmidi-dev .
-
-.PHONY: docker-repl
-docker-repl:
-	# Enter our development image
-	docker run -i -v $(realpath .):/project -w /project -t haskell-rtmidi-dev /bin/bash
