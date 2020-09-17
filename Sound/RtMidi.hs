@@ -48,7 +48,7 @@ import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
 import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray)
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
-import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, newForeignPtr_, withForeignPtr)
+import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, withForeignPtr)
 import GHC.Generics (Generic)
 import Sound.RtMidi.Foreign
 
