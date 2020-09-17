@@ -52,9 +52,14 @@ lint:
 	# Run hlint over our haskell source
 	stack exec -- hlint -i 'Parse error' -i 'Reduce duplication' Sound
 
-.PHONY: upload-docs
-upload-docs:
-	# Upload docs to hackage
+.PHONY: gen-docs
+gen-docs:
+	# Generate docs for hackage
+	rm -rf dist-newstyle/RtMidi-*-docs.tar.gz
 	cabal test
 	cabal haddock --haddock-for-hackage --haddock-option=--hyperlinked-source
-	cabal upload  --publish -d dist-newstyle/RtMidi-*-docs.tar.gz
+
+.PHONY: upload-docs
+upload-docs: gen-docs
+	# Upload docs to hackage
+	cabal upload --publish -d dist-newstyle/RtMidi-*-docs.tar.gz

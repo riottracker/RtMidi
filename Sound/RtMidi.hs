@@ -293,7 +293,7 @@ cancelCallback d = liftIO (withDevicePtr d rtmidi_in_cancel_callback)
 --
 -- By default, MIDI timing and active sensing messages are ignored during message input because of their
 -- relative high data rates. MIDI sysex messages are ignored by default as well.
--- Variable values of `true` imply that the respective message type will be ignored.
+-- Variable values of 'True' imply that the respective message type will be ignored.
 ignoreTypes :: MonadIO m
             => InputDevice
             -> Bool       -- ^ SysEx messages
