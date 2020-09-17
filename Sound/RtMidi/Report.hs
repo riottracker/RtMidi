@@ -3,6 +3,8 @@
 module Sound.RtMidi.Report
   ( ApiReport (..)
   , Report (..)
+  , buildApiReport
+  , buildCustomReport
   , buildReport
   ) where
 
@@ -12,6 +14,7 @@ import Data.List (nub)
 import GHC.Generics (Generic)
 import Sound.RtMidi
 
+-- | MIDI system information specific to a particular API.
 data ApiReport = ApiReport
   { apiRepApi :: !Api
   , apiRepName :: !String
@@ -21,6 +24,7 @@ data ApiReport = ApiReport
   } deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
+-- | MIDI system information for any number of APIs.
 data Report = Report
   { defaultInApi :: !Api
   , defaultOutApi :: !Api
@@ -28,6 +32,7 @@ data Report = Report
   } deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
+-- | Gather information about the given 'Api', including port information.
 buildApiReport :: MonadIO m => Api -> m ApiReport
 buildApiReport api = do
   name <- apiName api
@@ -38,8 +43,11 @@ buildApiReport api = do
   outPorts <- listPorts outDev
   pure (ApiReport api name displayName inPorts outPorts)
 
-buildReport :: MonadIO m => Bool -> m Report
-buildReport defaultOnly = do
+-- | Variant of 'buildReport' that allows you to restrict it to the default APIs.
+buildCustomReport :: MonadIO m
+                  => Bool  -- ^ True to report on default APIs, False to report on all compiled APIs.
+                  -> m Report
+buildCustomReport defaultOnly = do
   inDev <- defaultInput
   defInApi <- currentApi inDev
   outDev <- defaultOutput
@@ -47,3 +55,7 @@ buildReport defaultOnly = do
   apis <- if defaultOnly then pure (nub [defInApi, defOutApi]) else compiledApis
   apiReps <- traverse buildApiReport apis
   pure (Report defInApi defOutApi apiReps)
+
+-- | Gather information about all compiled APIs.
+buildReport :: MonadIO m => m Report
+buildReport = buildCustomReport False

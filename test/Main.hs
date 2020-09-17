@@ -50,7 +50,7 @@ testCompiledApiByName = testCase "compiledApiByName" $ do
 testBuildReport :: TestTree
 testBuildReport = testCase "buildReport" $ do
   -- We could test more but we mostly just want to make sure we can run 'buildReport'.
-  _ <- buildReport True
+  _ <- buildReport
   pure ()
 
 testVirtualReadWrite :: Api -> TestTree
