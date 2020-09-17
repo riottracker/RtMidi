@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | Utility code to gather MIDI system information.
 module Sound.RtMidi.Report
   ( ApiReport (..)
   , Report (..)
