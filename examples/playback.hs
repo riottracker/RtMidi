@@ -1,5 +1,6 @@
-import Sound.RtMidi (closePort, defaultOutput, openPort, sendMessage, portCount, portName)
 import Control.Concurrent (threadDelay)
+import qualified Data.Vector.Storable as VS
+import Sound.RtMidi (closePort, defaultOutput, openPort, sendMessage, portCount, portName)
 
 main :: IO ()
 main = do
@@ -15,6 +16,6 @@ main = do
   let arp2 = take 12 $ cycle [0x50, 0x53, 0x58]
   let song = cycle (arp0 ++ arp1 ++ arp2 ++ arp0)
   putStrLn "playing..."
-  mapM_ (\x -> sendMessage device [0x90, x, 0x7f] >> threadDelay 120000) $ take 240 song
+  mapM_ (\x -> sendMessage device (VS.fromList [0x90, x, 0x7f]) >> threadDelay 120000) $ take 240 song
   putStrLn "exiting..."
   closePort device

@@ -8,6 +8,7 @@ module Sound.RtMidi.Report
 
 import Control.DeepSeq (NFData)
 import Control.Monad.IO.Class (MonadIO)
+import Data.List (nub)
 import GHC.Generics (Generic)
 import Sound.RtMidi
 
@@ -20,8 +21,10 @@ data ApiReport = ApiReport
   } deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
-newtype Report = Report
-  { apiReports :: [ApiReport]
+data Report = Report
+  { defaultInApi :: !Api
+  , defaultOutApi :: !Api
+  , apiReports :: ![ApiReport]
   } deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
@@ -35,8 +38,12 @@ buildApiReport api = do
   outPorts <- listPorts outDev
   pure (ApiReport api name displayName inPorts outPorts)
 
-buildReport :: MonadIO m => m Report
-buildReport = do
-  apis <- compiledApis
+buildReport :: MonadIO m => Bool -> m Report
+buildReport defaultOnly = do
+  inDev <- defaultInput
+  defInApi <- currentApi inDev
+  outDev <- defaultOutput
+  defOutApi <- currentApi outDev
+  apis <- if defaultOnly then pure (nub [defInApi, defOutApi]) else compiledApis
   apiReps <- traverse buildApiReport apis
-  pure (Report apiReps)
+  pure (Report defInApi defOutApi apiReps)

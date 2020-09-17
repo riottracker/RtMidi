@@ -14,7 +14,7 @@ extra-source-files:  README.md
                      examples/callback.hs
                      examples/playback.hs
                      examples/poll.hs
-                     examples/query.hs
+                     examples/report.hs
 cabal-version:       >=1.10
 license:             MIT
 
@@ -35,6 +35,7 @@ library
   build-depends:       base >=4.9 && <4.15
                      , deepseq >= 1.4.4.0 && < 2
                      , unliftio-core >= 0.1.2.0 && < 1
+                     , vector >= 0.12.1.2 && < 1
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
                      , DerivingStrategies
@@ -77,6 +78,7 @@ executable rtmidi-callback
   build-depends:
       base
     , RtMidi
+    , vector
   default-language:   Haskell2010
   ghc-options: -threaded -rtsopts
 
@@ -86,6 +88,7 @@ executable rtmidi-playback
   build-depends:
       base
     , RtMidi
+    , vector
   default-language:   Haskell2010
   ghc-options: -threaded -rtsopts
 
@@ -95,15 +98,7 @@ executable rtmidi-poll
   build-depends:
       base
     , RtMidi
-  default-language:   Haskell2010
-  ghc-options: -threaded -rtsopts
-
-executable rtmidi-query
-  main-is:            query.hs
-  hs-source-dirs:     examples
-  build-depends:
-      base
-    , RtMidi
+    , vector
   default-language:   Haskell2010
   ghc-options: -threaded -rtsopts
 
@@ -124,6 +119,7 @@ test-suite rtmidi-test
   build-depends:
       base
     , RtMidi
+    , vector
     , tasty >= 1.2.3 && < 2
     , tasty-hunit >= 0.10.0.2 && < 1
   default-language:   Haskell2010

@@ -1,11 +1,12 @@
-import Sound.RtMidi (InputDevice, closePort, defaultInput, getMessage, openPort)
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad (forever)
+import qualified Data.Vector.Storable as VS
+import Sound.RtMidi (InputDevice, closePort, defaultInput, getMessage, openPort)
 
 mainLoop :: InputDevice -> IO ()
 mainLoop d = do
   m <- getMessage d
-  if length (snd m) > 0 then
+  if VS.length (snd m) > 0 then
     putStrLn $ show m
   else return ()
 

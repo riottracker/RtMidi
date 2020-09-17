@@ -1,9 +1,10 @@
+import qualified Data.Vector.Storable as VS
 import Data.Word (Word8)
-import Sound.RtMidi (closePort, defaultInput, openPort, setCallback)
 import Numeric (showHex)
+import Sound.RtMidi (closePort, defaultInput, openPort, setCallback)
 
-callback :: Double -> [Word8] -> IO ()
-callback delta msg = putStrLn $ (foldr (showHex . fromEnum) "" msg) ++ " - " ++ (show delta)
+callback :: Double -> VS.Vector Word8 -> IO ()
+callback delta msg = putStrLn $ (VS.foldr (showHex . fromEnum) "" msg) ++ " - " ++ (show delta)
 
 main :: IO ()
 main = do

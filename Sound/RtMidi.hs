@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
 -- | Interface to RtMidi
@@ -23,11 +24,13 @@ module Sound.RtMidi
   , defaultInput
   , createInput
   , setCallback
+  , setUnsafeCallback
   , setForeignCallback
   , cancelCallback
   , ignoreTypes
   , getMessage
   , getMessageSized
+  , getMessageMutable
   , defaultOutput
   , createOutput
   , sendMessage
@@ -40,10 +43,12 @@ import Control.Monad (unless, void)
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.IO.Unlift (MonadUnliftIO (..))
 import Data.Coerce (coerce)
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
-import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray, with, withArrayLen)
+import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray)
 import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
-import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, withForeignPtr)
+import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, newForeignPtr_, withForeignPtr)
 import GHC.Generics (Generic)
 import Sound.RtMidi.Foreign
 
@@ -235,8 +240,13 @@ createInput api clientName queueSizeLimit = liftIO $ do
 foreign import ccall "wrapper"
   mkCallbackPointer :: (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()) -> IO (FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ()))
 
-adaptCallbackCTypes :: (Double -> [Word8] -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
-adaptCallbackCTypes f (CDouble t) d s _ = peekArray (fromIntegral s) d >>= \a -> f t (coerce a)
+adaptCallbackCTypes :: (Double -> VS.Vector Word8 -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
+adaptCallbackCTypes !f (CDouble !t) m s _ = do
+  buf <- VS.generateM (fromIntegral s) (peekElemOff (coerce m))
+  f t buf
+
+adaptUnsafeCallbackCTypes :: (Double -> Ptr Word8 -> Int -> IO ()) -> (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
+adaptUnsafeCallbackCTypes !f (CDouble !t) m s _ = f t (coerce m) (fromIntegral s)
 
 -- | Set a callback function to be invoked for incoming MIDI messages.
 --
@@ -245,10 +255,20 @@ adaptCallbackCTypes f (CDouble t) d s _ = peekArray (fromIntegral s) d >>= \a ->
 -- some messages in the queue.
 setCallback :: MonadUnliftIO m
             => InputDevice
-            -> (Double -> [Word8] -> m ())  -- ^ Function that takes a timestamp and a MIDI message as arguments
+            -> (Double -> VS.Vector Word8 -> m ())  -- ^ Function that takes a timestamp and a MIDI message as arguments
             -> m ()
 setCallback d c = withRunInIO $ \run -> withDevicePtr d $ \dptr -> do
   f <- mkCallbackPointer (adaptCallbackCTypes (\ts bytes -> run (c ts bytes)))
+  rtmidi_in_set_callback dptr f nullPtr
+
+-- | A variant of 'setCallback' that takes a raw pointer and length. It is unsafe to share or reference the pointer beyond the
+-- scope of the callback, as the RtMidi-owned memory it references may have been changed or freed.
+setUnsafeCallback :: MonadIO m
+                  => InputDevice
+                  -> (Double -> Ptr Word8 -> Int -> IO ())
+                  -> m ()
+setUnsafeCallback d c = liftIO $ withDevicePtr d $ \dptr -> do
+  f <- mkCallbackPointer (adaptUnsafeCallbackCTypes c)
   rtmidi_in_set_callback dptr f nullPtr
 
 -- | Set a /foreign/ callback function to be invoked for incoming MIDI messages.
@@ -282,28 +302,30 @@ ignoreTypes :: MonadIO m
             -> m ()
 ignoreTypes d x y z = liftIO (withDevicePtrUnguarded d (\dptr -> rtmidi_in_ignore_types dptr x y z))
 
--- | Variant of 'getMessage' that allows you to set message buffer size (typically for large sysex messages).
-getMessageSized :: MonadIO m => InputDevice -> Int -> m (Double, [Word8])
-getMessageSized d n = liftIO $ alloca $ \s -> allocaArray n $ flip with $ \m -> withDevicePtrUnguarded d $ \dptr -> do
-  poke s (fromIntegral n)
-  CDouble timestamp <- rtmidi_in_get_message dptr m s
+-- | Variant of 'getMessage' that allows you to fill a shared buffer, returning timestamp and size.
+getMessageMutable :: MonadIO m => InputDevice -> VSM.IOVector Word8 -> m (Double, Int)
+getMessageMutable d buf = liftIO $ alloca $ \s -> VSM.unsafeWith buf $ \m -> withDevicePtrUnguarded d $ \dptr -> do
+  poke s (fromIntegral (VSM.length buf))
+  CDouble !timestamp <- rtmidi_in_get_message dptr (coerce m) s
   guardError dptr
-  size <- peek s
-  message <-
-    case size of
-      0 -> pure []
-      _ -> do
-        x <- peek m
-        y <- peekArray (fromIntegral size) x
-        pure (coerce y)
-  pure (timestamp, message)
+  csize <- peek s
+  let !size = fromIntegral csize
+  pure (timestamp, size)
+
+-- | Variant of 'getMessage' that allows you to set message buffer size (typically for large sysex messages).
+getMessageSized :: MonadIO m => InputDevice -> Int -> m (Double, VS.Vector Word8)
+getMessageSized d n = liftIO $ do
+  buf <- VSM.new n
+  (!timestamp, !size) <- getMessageMutable d buf
+  vec <- VSM.unsafeWith buf (VS.generateM size . peekElemOff)
+  pure (timestamp, vec)
 
 -- | Return data bytes for the next available MIDI message in the input queue and the event delta-time in seconds.
 --
 -- This function returns immediately whether a new message is available or not.
 -- A valid message is indicated by whether the list contains any elements.
 -- Note that large sysex messages will be silently dropped! Use 'getMessageSized' or use a callback to get these safely.
-getMessage :: MonadIO m => InputDevice -> m (Double, [Word8])
+getMessage :: MonadIO m => InputDevice -> m (Double, VS.Vector Word8)
 getMessage d = liftIO (getMessageSized d defaultMessageSize)
 
 -- | Default constructor for a 'Device' to use for output.
@@ -324,9 +346,9 @@ createOutput api clientName = liftIO $ do
   newOutputDevice dptr
 
 -- | Immediately send a single message out an open MIDI output port.
-sendMessage :: MonadIO m => OutputDevice -> [Word8] -> m ()
-sendMessage d m = liftIO $ withArrayLen m $ \n ptr -> withDevicePtr d $ \dptr ->
-  void (rtmidi_out_send_message dptr (coerce ptr) (fromIntegral n))
+sendMessage :: MonadIO m => OutputDevice -> VS.Vector Word8 -> m ()
+sendMessage d buf = liftIO $ VS.unsafeWith buf $ \m -> withDevicePtr d $ \dptr ->
+  void (rtmidi_out_send_message dptr (coerce m) (fromIntegral (VS.length buf)))
 
 -- | Returns the specifier for the MIDI 'Api' in use
 currentApi :: MonadIO m => IsDevice d => d -> m Api

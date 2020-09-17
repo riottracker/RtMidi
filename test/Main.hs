@@ -5,6 +5,7 @@ import Control.Monad (replicateM_, unless, when)
 import Data.Foldable (for_)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
 import Data.List (isInfixOf)
+import qualified Data.Vector.Storable as VS
 import Data.Word (Word8)
 import Sound.RtMidi (Api (..), apiName, apiDisplayName, closePort, compiledApiByName, compiledApis, createInput, createOutput, currentApi, findPort, sendMessage, setCallback, openPort, openVirtualPort)
 import Sound.RtMidi.Report (Report, buildReport)
@@ -14,8 +15,14 @@ import Test.Tasty.HUnit (assertFailure, testCase, (@?=))
 incIORef :: IORef Int -> IO ()
 incIORef = flip modifyIORef succ
 
-readerCallback :: IORef Int -> Double -> [Word8] -> IO ()
-readerCallback countRef _ msg = incIORef countRef
+-- A simple note-on message
+exampleMessage :: VS.Vector Word8
+exampleMessage = VS.fromList [0x90, 0x51, 0x7f]
+
+readerCallback :: IORef Int -> Double -> VS.Vector Word8 -> IO ()
+readerCallback countRef _ msg = do
+  msg @?= exampleMessage
+  incIORef countRef
 
 testApiName :: TestTree
 testApiName = testCase "apiName" $ do
@@ -43,14 +50,12 @@ testCompiledApiByName = testCase "compiledApiByName" $ do
 testBuildReport :: TestTree
 testBuildReport = testCase "buildReport" $ do
   -- We could test more but we mostly just want to make sure we can run 'buildReport'.
-  _ <- buildReport
+  _ <- buildReport True
   pure ()
 
 testVirtualReadWrite :: Api -> TestTree
 testVirtualReadWrite api = testCase ("virtual read write with " <> show api) $ do
   let expectedCount = 3
-      -- a simple note-on message
-      message = [0x90, 0x51, 0x7f]
       portName = "rtmidi-test-port"
       -- 100 ms delay in us
       delayUs = 100000
@@ -73,7 +78,7 @@ testVirtualReadWrite api = testCase ("virtual read write with " <> show api) $ d
   let portNum = maybe (error "Could not find port") id maybePortNum
   openPort outDev portNum portName
   -- Send messages
-  replicateM_ expectedCount (sendMessage outDev message)
+  replicateM_ expectedCount (sendMessage outDev exampleMessage)
   -- Sleep a bit to ensure message delivery
   threadDelay delayUs
   -- Close writer

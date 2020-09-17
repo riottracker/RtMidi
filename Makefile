@@ -26,6 +26,18 @@ build:
 test:
 	stack test
 
+.PHONY: example-callback
+example-callback: build
+	stack exec -- rtmidi-callback
+
+.PHONY: example-playback
+example-playback: build
+	stack exec -- rtmidi-playback
+
+.PHONY: example-poll
+example-poll: build
+	stack exec -- rtmidi-poll
+
 .PHONY: example-report
 example-report: build
 	stack exec -- rtmidi-report
