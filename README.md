@@ -10,12 +10,12 @@ This project is tested with Cabal (latest versions of last two compiler lines) a
 
 You can get started with development like so:
 
-    # Build on OSX CoreMIDI support or Linux with ALSA support
-    # You can also pass `--flag RtMidi:jack` for Jack support
-    stack build
+    # Build and test on OSX CoreMIDI support or Linux with ALSA support.
+    # (You can also manually invoke stack and pass `--flag RtMidi:jack` for Jack support.)
+    make test
 
-    # Verify that it works:
-    stack exec -- rtmidi-query
+    # Print information about all accessible MIDI devices and all compiled APIs.
+    make example-report
 
 ## TODO
 
