@@ -4,6 +4,14 @@
 
 Haskell wrapper for [RtMidi](http://www.music.mcgill.ca/~gary/rtmidi/), the lightweight, cross-platform MIDI I/O library.
 
+## How to use
+
+See [Hackage](https://hackage.haskell.org/package/RtMidi) for the latest released version and add `RtMidi` and `vector` to your library `build-depends`.
+
+Follow the [callback](https://github.com/riottracker/RtMidi/blob/master/examples/callback.hs) example to receive messages.
+
+Follow the [playback](https://github.com/riottracker/RtMidi/blob/master/examples/playback.hs) example to send messages.
+
 ## Development
 
 This project is tested with Cabal (latest versions of last two compiler lines) and Stack (latest LTS).
