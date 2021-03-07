@@ -1,5 +1,6 @@
+cabal-version:       3.0
 name:                RtMidi
-version:             0.4.0.0
+version:             0.5.0.0
 synopsis:            Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
@@ -15,7 +16,6 @@ extra-source-files:  README.md
                      examples/playback.hs
                      examples/poll.hs
                      examples/report.hs
-cabal-version:       >=1.10
 license:             MIT
 
 Flag alsa {
@@ -32,7 +32,7 @@ library
   exposed-modules:     Sound.RtMidi
                      , Sound.RtMidi.Report
   other-modules:       Sound.RtMidi.Foreign
-  build-depends:       base >=4.9 && <4.15
+  build-depends:       base >=4.14 && <4.15
                      , deepseq >= 1.4.4.0 && < 2
                      , unliftio-core >= 0.1.2.0 && < 1
                      , vector >= 0.12.1.2 && < 1
@@ -42,28 +42,28 @@ library
                      , GeneralizedNewtypeDeriving
   include-dirs:        rtmidi
   extra-libraries:     stdc++
-  c-sources:           rtmidi/RtMidi.cpp
+  cxx-sources:         rtmidi/RtMidi.cpp
                        rtmidi/rtmidi_c.cpp
 
   -- TODO(ejconlon) Add windows support
 
   if os(linux)
     if flag(alsa) && flag(jack)
-      cc-options:       -D__LINUX_ALSA__ -D__UNIX_JACK__
+      cxx-options:      -D__LINUX_ALSA__ -D__UNIX_JACK__
       extra-libraries:  asound pthread jack
     if flag(alsa) && !flag(jack)
-      cc-options:       -D__LINUX_ALSA__
+      cxx-options:      -D__LINUX_ALSA__
       extra-libraries:  asound pthread
     if !flag(alsa) && flag(jack)
-      cc-options:       -D__UNIX_JACK__
+      cxx-options:      -D__UNIX_JACK__
       extra-libraries:  jack
 
   if os(darwin)
     if flag(jack)
-      cc-options:       -D__MACOSX_CORE__ -D__UNIX_JACK__
+      cxx-options:      -D__MACOSX_CORE__ -D__UNIX_JACK__
       extra-libraries:  jack
     else
-      cc-options:       -D__MACOSX_CORE__
+      cxx-options:    -D__MACOSX_CORE__
     frameworks:       CoreMIDI CoreAudio CoreFoundation
     -- NOTE(ejconlon) This is to make the c ffi wrapper actually catch
     -- the c++ exceptions instead of simply aborting.
@@ -108,7 +108,7 @@ executable rtmidi-report
   build-depends:
       base
     , RtMidi
-    , pretty-simple >= 3.2.3.0 && < 4
+    , pretty-simple >= 4.0.0.0 && < 5
   default-language:   Haskell2010
   ghc-options: -threaded -rtsopts
 

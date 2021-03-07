@@ -6,13 +6,16 @@ parameters:
     default: "RtMidi"
   cache_ver:
     type: string
-    default: "v4"
+    default: "v5"
+  haskell_image:
+    type: string
+    default: "ejconlon/haskell-custom"
 
 commands:
   install_native_deps:
     steps:
     - run:
-        name: Install apt
+        name: Install native deps
         command: if [ -f docker/packages.txt ]; then apt-get update && apt-get install -y $(cat docker/packages.txt); fi
 
 jobs:
@@ -21,20 +24,20 @@ jobs:
       lts_ghc_ver:
         type: string
     docker:
-      - image: haskell:<< parameters.lts_ghc_ver >>
+      - image: << pipeline.parameters.haskell_image >>:<< parameters.lts_ghc_ver >>
     steps:
       - checkout
       - install_native_deps
       - restore_cache:
           name: Restore cached dependencies
           keys:
-            - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
+            - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
       - run:
-          name: Build project
-          command: stack build
+          name: Run tests
+          command: make test
       - save_cache:
           name: Cache dependencies
-          key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
+          key: stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
           paths:
             - "/root/.stack"
             - ".stack-work"
@@ -43,7 +46,7 @@ jobs:
       ghc_ver:
         type: string
     docker:
-      - image: haskell:<< parameters.ghc_ver >>
+      - image: << pipeline.parameters.haskell_image >>:<< parameters.ghc_ver >>
     steps:
       - checkout
       - install_native_deps
@@ -57,6 +60,9 @@ jobs:
       - run:
           name: Build project
           command: cabal build
+      - run:
+          name: Run tests
+          command: cabal test
       - save_cache:
           name: Cache dependencies
           key: cabal-<< pipeline.parameters.cache_ver >>-<< parameters.ghc_ver >>-{{ checksum "<< pipeline.parameters.project >>.cabal" }}
@@ -70,14 +76,9 @@ workflows:
   build:
     jobs:
       - stack_build:
-          lts_ghc_ver: 8.8.4
-      - cabal_build:
-          name: cabal_build_8_8
-          ghc_ver: 8.8.4
-          requires:
-            - stack_build
+          lts_ghc_ver: 8.10.4
       - cabal_build:
           name: cabal_build_8_10
-          ghc_ver: 8.10.2
+          ghc_ver: 8.10.4
           requires:
             - stack_build

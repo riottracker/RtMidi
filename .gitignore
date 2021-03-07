@@ -1,5 +1,6 @@
-/.stack-work
-/dist
-/dist-newstyle
-/stack.yaml.lock
+.stack-work/
+dist/
+dist-newstyle/
+*~
+*.swo
 *.swp
