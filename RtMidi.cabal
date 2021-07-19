@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                RtMidi
-version:             0.5.0.0
+version:             0.5.0.1
 synopsis:            Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
