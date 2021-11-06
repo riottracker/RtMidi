@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                RtMidi
-version:             0.5.0.1
+version:             0.5.0.2
 synopsis:            Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
@@ -45,8 +45,6 @@ library
   cxx-sources:         rtmidi/RtMidi.cpp
                        rtmidi/rtmidi_c.cpp
 
-  -- TODO(ejconlon) Add windows support
-
   if os(linux)
     if flag(alsa) && flag(jack)
       cxx-options:      -D__LINUX_ALSA__ -D__UNIX_JACK__
@@ -71,6 +69,10 @@ library
     -- avoid https://gitlab.haskell.org/ghc/ghc/issues/11829
     ld-options:        -Wl,-keep_dwarf_unwind
     ghc-options:       -pgmc=clang++
+
+  if os(mingw32)
+    cxx-options:       -D__WINDOWS_MM__
+    extra-libraries:   winmm
 
 executable rtmidi-callback
   main-is:            callback.hs
