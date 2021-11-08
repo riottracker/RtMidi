@@ -32,6 +32,9 @@ jobs:
           name: Restore cached dependencies
           keys:
             - stack-<< pipeline.parameters.cache_ver >>-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
+      - run:
+          name: Build project
+          command: make build
       # NOTE(ejconlon) Can't test because no snd device on CI
       # - run:
       #     name: Run tests
