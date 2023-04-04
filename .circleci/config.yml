@@ -6,7 +6,7 @@ parameters:
     default: "RtMidi"
   cache_ver:
     type: string
-    default: "v6"
+    default: "v7"
   haskell_image:
     type: string
     default: "haskell"
@@ -81,9 +81,9 @@ workflows:
   build:
     jobs:
       - stack_build:
-          lts_ghc_ver: 9.0.2
+          lts_ghc_ver: 9.2.7
       - cabal_build:
-          name: cabal_build_9_0
-          ghc_ver: 9.0.2
+          name: cabal_build_9_2
+          ghc_ver: 9.2.7
           requires:
             - stack_build
