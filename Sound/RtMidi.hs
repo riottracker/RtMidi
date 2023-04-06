@@ -34,6 +34,7 @@ module Sound.RtMidi
   , defaultOutput
   , createOutput
   , sendMessage
+  , sendUnsafeMessage
   , currentApi
   )
 where
@@ -388,8 +389,12 @@ createOutput api clientName = do
 
 -- | Immediately send a single message out an open MIDI output port.
 sendMessage :: OutputDevice -> VS.Vector Word8 -> IO ()
-sendMessage d buf = VS.unsafeWith buf $ \m -> withDevicePtr d $ \dptr ->
-  void (rtmidi_out_send_message dptr (coerce m) (fromIntegral (VS.length buf)))
+sendMessage d buf = VS.unsafeWith buf (\ptr -> sendUnsafeMessage d ptr (VS.length buf))
+
+-- | A variant of 'sendMessage' that allows reading directly from pinned memory.
+sendUnsafeMessage :: OutputDevice -> Ptr Word8 -> Int -> IO ()
+sendUnsafeMessage d ptr size =
+  withDevicePtr d $ \dptr -> void (rtmidi_out_send_message dptr (coerce ptr) (fromIntegral size))
 
 -- | Returns the specifier for the MIDI 'Api' in use
 currentApi :: IsDevice d => d -> IO Api
