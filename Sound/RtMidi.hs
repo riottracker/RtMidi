@@ -35,7 +35,8 @@ module Sound.RtMidi
   , createOutput
   , sendMessage
   , currentApi
-  ) where
+  )
+where
 
 import Control.DeepSeq (NFData)
 import Control.Exception (Exception, throwIO)
@@ -59,13 +60,13 @@ defaultMessageSize :: Int
 defaultMessageSize = 4
 
 -- | Allows us to discriminate in/out functions in generic contexts
-data DeviceType =
-    InputDeviceType
+data DeviceType
+  = InputDeviceType
   | OutputDeviceType
   deriving stock (Eq, Show, Ord, Enum, Bounded, Generic)
   deriving anyclass (NFData)
 
-newtype Device = Device { unDevice :: ForeignPtr Wrapper }
+newtype Device = Device {unDevice :: ForeignPtr Wrapper}
   deriving stock (Eq, Show)
 
 -- | Generalizes 'InputDevice' and 'OutputDevice' for use in common functions
@@ -74,7 +75,7 @@ class IsDevice d where
   getDeviceType :: d -> DeviceType
 
 -- | A handle to a device to be used for input
-newtype InputDevice = InputDevice { unInputDevice :: Device }
+newtype InputDevice = InputDevice {unInputDevice :: Device}
   deriving stock (Eq, Show)
 
 instance IsDevice InputDevice where
@@ -85,7 +86,7 @@ newInputDevice :: Ptr Wrapper -> IO InputDevice
 newInputDevice = fmap (InputDevice . Device) . newForeignPtr rtmidi_in_free
 
 -- | A handle to a device to be used for input
-newtype OutputDevice = OutputDevice { unOutputDevice :: Device }
+newtype OutputDevice = OutputDevice {unOutputDevice :: Device}
   deriving stock (Eq, Show)
 
 instance IsDevice OutputDevice where
@@ -96,7 +97,7 @@ newOutputDevice :: Ptr Wrapper -> IO OutputDevice
 newOutputDevice = fmap (OutputDevice . Device) . newForeignPtr rtmidi_out_free
 
 -- | An internal RtMidi error
-newtype Error = Error { unError :: String }
+newtype Error = Error {unError :: String}
   deriving stock (Eq, Show, Generic)
   deriving anyclass (NFData)
 
@@ -144,11 +145,14 @@ compiledApis = liftIO $ do
   pure (map toApi as)
 
 -- | Open a MIDI connection
-openPort :: (MonadIO m, IsDevice d)
-         => d
-         -> Int          -- ^ port number
-         -> String       -- ^ name for the application port that is used
-         -> m ()
+openPort
+  :: (MonadIO m, IsDevice d)
+  => d
+  -> Int
+  -- ^ port number
+  -> String
+  -- ^ name for the application port that is used
+  -> m ()
 openPort d n name = liftIO $ withDevicePtr d $ \dptr ->
   withCString name (rtmidi_open_port dptr (toEnum n))
 
@@ -187,13 +191,14 @@ portName d n = liftIO $ withDevicePtrUnguarded d $ \dptr -> do
 -- Note that the underlying library does not offer an "atomic" interface for this
 -- so results may be inconsistent if you connect/disconnect ports during this call.
 listPorts :: (MonadIO m, IsDevice d) => d -> m [(Int, String)]
-listPorts d = liftIO $ portCount d >>= go [] 0 where
+listPorts d = liftIO $ portCount d >>= go [] 0
+ where
   go acc i c =
     if i >= c
       then pure (reverse acc)
       else do
         mn <- portName d i
-        let acc' = maybe acc (\n -> (i, n):acc) mn
+        let acc' = maybe acc (\n -> (i, n) : acc) mn
         go acc' (succ i) c
 
 -- | Convenience function to lookup the first port satisfying the predicate.
@@ -209,7 +214,8 @@ listPorts d = liftIO $ portCount d >>= go [] 0 where
 -- Note that if you are performing many lookups, it's better to use 'listPorts' and
 -- do the lookups yourself (see the caveats there too).
 findPort :: (MonadIO m, IsDevice d) => d -> (String -> Bool) -> m (Maybe Int)
-findPort d f = liftIO $ portCount d >>= go 0 where
+findPort d f = liftIO $ portCount d >>= go 0
+ where
   go i c =
     if i >= c
       then pure Nothing
@@ -227,11 +233,15 @@ defaultInput = liftIO $ do
   newInputDevice dptr
 
 -- | Create a new 'Device' to use for input.
-createInput :: MonadIO m
-            => Api        -- ^ API to use
-            -> String     -- ^ client name
-            -> Int        -- ^ size of the MIDI input queue
-            -> m InputDevice
+createInput
+  :: MonadIO m
+  => Api
+  -- ^ API to use
+  -> String
+  -- ^ client name
+  -> Int
+  -- ^ size of the MIDI input queue
+  -> m InputDevice
 createInput api clientName queueSizeLimit = liftIO $ do
   dptr <- withCString clientName (\str -> rtmidi_in_create (fromApi api) str (fromIntegral queueSizeLimit))
   guardError dptr
@@ -253,20 +263,23 @@ adaptUnsafeCallbackCTypes !f (CDouble !t) m s _ = f t (coerce m) (fromIntegral s
 -- The callback function will be called whenever an incoming MIDI message is received.
 -- While not absolutely necessary, it is best to set the callback function before opening a MIDI port to avoid leaving
 -- some messages in the queue.
-setCallback :: MonadUnliftIO m
-            => InputDevice
-            -> (Double -> VS.Vector Word8 -> m ())  -- ^ Function that takes a timestamp and a MIDI message as arguments
-            -> m ()
+setCallback
+  :: MonadUnliftIO m
+  => InputDevice
+  -> (Double -> VS.Vector Word8 -> m ())
+  -- ^ Function that takes a timestamp and a MIDI message as arguments
+  -> m ()
 setCallback d c = withRunInIO $ \run -> withDevicePtr d $ \dptr -> do
   f <- mkCallbackPointer (adaptCallbackCTypes (\ts bytes -> run (c ts bytes)))
   rtmidi_in_set_callback dptr f nullPtr
 
 -- | A variant of 'setCallback' that takes a raw pointer and length. It is unsafe to share or reference the pointer beyond the
 -- scope of the callback, as the RtMidi-owned memory it references may have been changed or freed.
-setUnsafeCallback :: MonadIO m
-                  => InputDevice
-                  -> (Double -> Ptr Word8 -> Int -> IO ())
-                  -> m ()
+setUnsafeCallback
+  :: MonadIO m
+  => InputDevice
+  -> (Double -> Ptr Word8 -> Int -> IO ())
+  -> m ()
 setUnsafeCallback d c = liftIO $ withDevicePtr d $ \dptr -> do
   f <- mkCallbackPointer (adaptUnsafeCallbackCTypes c)
   rtmidi_in_set_callback dptr f nullPtr
@@ -275,11 +288,13 @@ setUnsafeCallback d c = liftIO $ withDevicePtr d $ \dptr -> do
 --
 -- This variant allows you to set the callback to a C function pointer so we're not forced
 -- to enter a Haskell wrapper every invocation.
-setForeignCallback :: MonadIO m
-                   => InputDevice
-                   -> FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
-                   -> Ptr () -- ^ Pointer to context that will be passed into the callback
-                   -> m ()
+setForeignCallback
+  :: MonadIO m
+  => InputDevice
+  -> FunPtr (CDouble -> Ptr CUChar -> CInt -> Ptr () -> IO ())
+  -> Ptr ()
+  -- ^ Pointer to context that will be passed into the callback
+  -> m ()
 setForeignCallback d f ctx = liftIO $ withDevicePtr d $ \dptr ->
   rtmidi_in_set_callback dptr f ctx
 
@@ -294,12 +309,16 @@ cancelCallback d = liftIO (withDevicePtr d rtmidi_in_cancel_callback)
 -- By default, MIDI timing and active sensing messages are ignored during message input because of their
 -- relative high data rates. MIDI sysex messages are ignored by default as well.
 -- Variable values of 'True' imply that the respective message type will be ignored.
-ignoreTypes :: MonadIO m
-            => InputDevice
-            -> Bool       -- ^ SysEx messages
-            -> Bool       -- ^ Time messages
-            -> Bool       -- ^ Sense messages
-            -> m ()
+ignoreTypes
+  :: MonadIO m
+  => InputDevice
+  -> Bool
+  -- ^ SysEx messages
+  -> Bool
+  -- ^ Time messages
+  -> Bool
+  -- ^ Sense messages
+  -> m ()
 ignoreTypes d x y z = liftIO (withDevicePtrUnguarded d (\dptr -> rtmidi_in_ignore_types dptr x y z))
 
 -- | Variant of 'getMessage' that allows you to fill a shared buffer, returning timestamp and size.
@@ -336,10 +355,13 @@ defaultOutput = liftIO $ do
   newOutputDevice dptr
 
 -- | Create a new 'Device' to use for output.
-createOutput :: MonadIO m
-             => Api        -- ^ API to use
-             -> String     -- ^ client name
-             -> m OutputDevice
+createOutput
+  :: MonadIO m
+  => Api
+  -- ^ API to use
+  -> String
+  -- ^ client name
+  -> m OutputDevice
 createOutput api clientName = liftIO $ do
   dptr <- withCString clientName (rtmidi_out_create (fromApi api))
   guardError dptr

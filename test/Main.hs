@@ -3,11 +3,12 @@ module Main (main) where
 import Control.Concurrent (threadDelay)
 import Control.Monad (replicateM_, unless, when)
 import Data.Foldable (for_)
-import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
+import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import Data.List (isInfixOf)
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector.Storable as VS
 import Data.Word (Word8)
-import Sound.RtMidi (Api (..), apiName, apiDisplayName, closePort, compiledApiByName, compiledApis, createInput, createOutput, currentApi, findPort, sendMessage, setCallback, openPort, openVirtualPort)
+import Sound.RtMidi (Api (..), apiDisplayName, apiName, closePort, compiledApiByName, compiledApis, createInput, createOutput, currentApi, findPort, openPort, openVirtualPort, sendMessage, setCallback)
 import Sound.RtMidi.Report (Report, buildReport)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase, (@?=))
@@ -75,7 +76,7 @@ testVirtualReadWrite api = testCase ("virtual read write with " <> show api) $ d
   outApi <- currentApi outDev
   outApi @?= api
   maybePortNum <- findPort outDev (isInfixOf portName)
-  let portNum = maybe (error "Could not find port") id maybePortNum
+  let portNum = fromMaybe (error "Could not find port") maybePortNum
   openPort outDev portNum portName
   -- Send messages
   replicateM_ expectedCount (sendMessage outDev exampleMessage)
@@ -94,10 +95,12 @@ main = do
   apis <- compiledApis
   let rwTests = fmap testVirtualReadWrite (filter (/= DummyApi) apis)
       rwGroup = testGroup "R/W" rwTests
-  defaultMain $ testGroup "RtMidi" $
-    [ testApiName
-    , testApiDisplayName
-    , testCompiledApiByName
-    , testBuildReport
-    , rwGroup
-    ]
+  defaultMain $
+    testGroup
+      "RtMidi"
+      [ testApiName
+      , testApiDisplayName
+      , testCompiledApiByName
+      , testBuildReport
+      , rwGroup
+      ]

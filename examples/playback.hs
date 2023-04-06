@@ -1,13 +1,13 @@
 import Control.Concurrent (threadDelay)
 import qualified Data.Vector.Storable as VS
-import Sound.RtMidi (closePort, defaultOutput, openPort, sendMessage, portCount, portName)
+import Sound.RtMidi (closePort, defaultOutput, openPort, portCount, portName, sendMessage)
 
 main :: IO ()
 main = do
   device <- defaultOutput
   numPorts <- portCount device
-  ports <- mapM (portName device) [0..numPorts-1]
-  mapM_ (\t -> putStrLn $ show t) $ zip [0..] ports
+  ports <- mapM (portName device) [0 .. numPorts - 1]
+  mapM_ print $ zip [0 ..] ports
   putStrLn "select port: "
   selection <- getLine
   openPort device (read selection) "RtMidi"

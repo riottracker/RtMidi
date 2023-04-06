@@ -7,7 +7,8 @@ module Sound.RtMidi.Report
   , buildApiReport
   , buildCustomReport
   , buildReport
-  ) where
+  )
+where
 
 import Control.DeepSeq (NFData)
 import Control.Monad.IO.Class (MonadIO)
@@ -22,16 +23,18 @@ data ApiReport = ApiReport
   , apiRepDisplayName :: !String
   , apiInPorts :: ![(Int, String)]
   , apiOutPorts :: ![(Int, String)]
-  } deriving stock (Eq, Show, Generic)
-    deriving anyclass (NFData)
+  }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (NFData)
 
 -- | MIDI system information for any number of APIs.
 data Report = Report
   { defaultInApi :: !Api
   , defaultOutApi :: !Api
   , apiReports :: ![ApiReport]
-  } deriving stock (Eq, Show, Generic)
-    deriving anyclass (NFData)
+  }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (NFData)
 
 -- | Gather information about the given 'Api', including port information.
 buildApiReport :: MonadIO m => Api -> m ApiReport
@@ -45,9 +48,11 @@ buildApiReport api = do
   pure (ApiReport api name displayName inPorts outPorts)
 
 -- | Variant of 'buildReport' that allows you to restrict it to the default APIs.
-buildCustomReport :: MonadIO m
-                  => Bool  -- ^ True to report on default APIs, False to report on all compiled APIs.
-                  -> m Report
+buildCustomReport
+  :: MonadIO m
+  => Bool
+  -- ^ True to report on default APIs, False to report on all compiled APIs.
+  -> m Report
 buildCustomReport defaultOnly = do
   inDev <- defaultInput
   defInApi <- currentApi inDev
