@@ -12,3 +12,4 @@ jobs:
     - uses: freckle/stack-action@v4
       with:
         pedantic: false
+        test: false  # Can build but can't test because no sound devices on CI
