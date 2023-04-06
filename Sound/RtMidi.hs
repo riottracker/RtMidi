@@ -52,6 +52,33 @@ import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCStr
 import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, withForeignPtr)
 import GHC.Generics (Generic)
 import Sound.RtMidi.Foreign
+  ( Api (..)
+  , Wrapper (..)
+  , fromApi
+  , rtmidi_api_display_name
+  , rtmidi_api_name
+  , rtmidi_close_port
+  , rtmidi_compiled_api_by_name
+  , rtmidi_get_compiled_api
+  , rtmidi_get_port_count
+  , rtmidi_get_port_name
+  , rtmidi_in_cancel_callback
+  , rtmidi_in_create
+  , rtmidi_in_create_default
+  , rtmidi_in_free
+  , rtmidi_in_get_current_api
+  , rtmidi_in_get_message
+  , rtmidi_in_ignore_types
+  , rtmidi_in_set_callback
+  , rtmidi_open_port
+  , rtmidi_open_virtual_port
+  , rtmidi_out_create
+  , rtmidi_out_create_default
+  , rtmidi_out_free
+  , rtmidi_out_get_current_api
+  , rtmidi_out_send_message
+  , toApi
+  )
 
 -- The default message size (in bytes) expected from 'getMessage'
 -- Mostly just needs to be bigger than the max MIDI message size, which is 3 bytes

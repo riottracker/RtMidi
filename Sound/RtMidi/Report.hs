@@ -15,6 +15,17 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.List (nub)
 import GHC.Generics (Generic)
 import Sound.RtMidi
+  ( Api
+  , apiDisplayName
+  , apiName
+  , compiledApis
+  , createInput
+  , createOutput
+  , currentApi
+  , defaultInput
+  , defaultOutput
+  , listPorts
+  )
 
 -- | MIDI system information specific to a particular API.
 data ApiReport = ApiReport
