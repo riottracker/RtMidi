@@ -63,7 +63,8 @@ upload-docs: gen-docs
 
 # Update RtMidi sources from upstream
 update-sources:
-	curl --output rtmidi/RtMidi.cpp {{ rt_midi_url }}/RtMidi.cpp
-	curl --output rtmidi/RtMidi.h {{ rt_midi_url }}/RtMidi.h
-	curl --output rtmidi/rtmidi_c.cpp {{ rt_midi_url }}/rtmidi_c.cpp
-	curl --output rtmidi/rtmidi_c.h {{ rt_midi_url }}/rtmidi_c.h
+  curl --output rtmidi/RtMidi.cpp {{ rt_midi_url }}/RtMidi.cpp
+  curl --output rtmidi/RtMidi.h {{ rt_midi_url }}/RtMidi.h
+  curl --output rtmidi/rtmidi_c.cpp {{ rt_midi_url }}/rtmidi_c.cpp
+  curl --output rtmidi/rtmidi_c.h {{ rt_midi_url }}/rtmidi_c.h
+  git apply rtmidi.patch

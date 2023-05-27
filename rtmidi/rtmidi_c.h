@@ -65,6 +65,7 @@ enum RtMidiApi {
     RTMIDI_API_UNIX_JACK,      /*!< The Jack Low-Latency MIDI Server API. */
     RTMIDI_API_WINDOWS_MM,     /*!< The Microsoft Multimedia MIDI API. */
     RTMIDI_API_RTMIDI_DUMMY,   /*!< A compilable but non-functional API. */
+    RTMIDI_API_WEB_MIDI_API,   /*!< W3C Web MIDI API. */
     RTMIDI_API_NUM             /*!< Number of values in this enum. */
 };
 
@@ -156,10 +157,10 @@ RTMIDIAPI void rtmidi_close_port (RtMidiPtr device);
 RTMIDIAPI unsigned int rtmidi_get_port_count (RtMidiPtr device);
 
 /*! \brief Access a string identifier for the specified MIDI input port number.
- * 
+ *
  * To prevent memory leaks a char buffer must be passed to this function.
  * NULL can be passed as bufOut parameter, and that will write the required buffer length in the bufLen.
- * 
+ *
  * See RtMidi::getPortName().
  */
 RTMIDIAPI int rtmidi_get_port_name (RtMidiPtr device, unsigned int portNumber, char * bufOut, int * bufLen);

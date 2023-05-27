@@ -1,0 +1,51 @@
+diff --git a/rtmidi/RtMidi.cpp b/rtmidi/RtMidi.cpp
+index 6a1c89e..bcf88d1 100644
+--- a/rtmidi/RtMidi.cpp
++++ b/rtmidi/RtMidi.cpp
+@@ -378,8 +378,8 @@ const char* rtmidi_api_names[][2] = {
+   { "alsa"        , "ALSA" },
+   { "jack"        , "Jack" },
+   { "winmm"       , "Windows MultiMedia" },
+-  { "web"         , "Web MIDI API" },
+   { "dummy"       , "Dummy" },
++  { "web"         , "Web MIDI API" },
+ };
+ const unsigned int rtmidi_num_api_names =
+   sizeof(rtmidi_api_names)/sizeof(rtmidi_api_names[0]);
+diff --git a/rtmidi/rtmidi_c.cpp b/rtmidi/rtmidi_c.cpp
+index 19f586e..75fa1b1 100644
+--- a/rtmidi/rtmidi_c.cpp
++++ b/rtmidi/rtmidi_c.cpp
+@@ -17,6 +17,7 @@ class StaticAssertions { StaticAssertions() {
+     ENUM_EQUAL( RTMIDI_API_UNIX_JACK,       RtMidi::UNIX_JACK );
+     ENUM_EQUAL( RTMIDI_API_WINDOWS_MM,      RtMidi::WINDOWS_MM );
+     ENUM_EQUAL( RTMIDI_API_RTMIDI_DUMMY,    RtMidi::RTMIDI_DUMMY );
++    ENUM_EQUAL( RTMIDI_API_WEB_MIDI_API,    RtMidi::WEB_MIDI_API );
+ 
+     ENUM_EQUAL( RTMIDI_ERROR_WARNING,            RtMidiError::WARNING );
+     ENUM_EQUAL( RTMIDI_ERROR_DEBUG_WARNING,      RtMidiError::DEBUG_WARNING );
+diff --git a/rtmidi/rtmidi_c.h b/rtmidi/rtmidi_c.h
+index efbf977..41d4729 100644
+--- a/rtmidi/rtmidi_c.h
++++ b/rtmidi/rtmidi_c.h
+@@ -65,6 +65,7 @@ enum RtMidiApi {
+     RTMIDI_API_UNIX_JACK,      /*!< The Jack Low-Latency MIDI Server API. */
+     RTMIDI_API_WINDOWS_MM,     /*!< The Microsoft Multimedia MIDI API. */
+     RTMIDI_API_RTMIDI_DUMMY,   /*!< A compilable but non-functional API. */
++    RTMIDI_API_WEB_MIDI_API,   /*!< W3C Web MIDI API. */
+     RTMIDI_API_NUM             /*!< Number of values in this enum. */
+ };
+ 
+@@ -156,10 +157,10 @@ RTMIDIAPI void rtmidi_close_port (RtMidiPtr device);
+ RTMIDIAPI unsigned int rtmidi_get_port_count (RtMidiPtr device);
+ 
+ /*! \brief Access a string identifier for the specified MIDI input port number.
+- * 
++ *
+  * To prevent memory leaks a char buffer must be passed to this function.
+  * NULL can be passed as bufOut parameter, and that will write the required buffer length in the bufLen.
+- * 
++ *
+  * See RtMidi::getPortName().
+  */
+ RTMIDIAPI int rtmidi_get_port_name (RtMidiPtr device, unsigned int portNumber, char * bufOut, int * bufLen);
