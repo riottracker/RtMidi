@@ -101,7 +101,7 @@ foreign import ccall "rtmidi_c.h rtmidi_get_port_count"
   rtmidi_get_port_count :: Ptr Wrapper -> IO CUInt
 
 foreign import ccall "rtmidi_c.h rtmidi_get_port_name"
-  rtmidi_get_port_name :: Ptr Wrapper -> CUInt -> IO CString
+  rtmidi_get_port_name :: Ptr Wrapper -> CUInt -> CString -> Ptr CInt -> IO CInt
 
 foreign import ccall "rtmidi_c.h rtmidi_in_cancel_callback"
   rtmidi_in_cancel_callback :: Ptr Wrapper -> IO ()

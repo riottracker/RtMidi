@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                RtMidi
-version:             0.6.1.0
+version:             0.7.0.0
 synopsis:            Haskell wrapper for RtMidi, the lightweight, cross-platform MIDI I/O library.
 description:         Please see the README on GitHub at <https://github.com/riottracker/RtMidi#readme>
 category:            Sound
@@ -46,21 +46,21 @@ library
 
   if os(linux)
     if flag(alsa) && flag(jack)
-      cxx-options:      -D__LINUX_ALSA__ -D__UNIX_JACK__
+      cxx-options:      -std=c++11 -D__LINUX_ALSA__ -D__UNIX_JACK__
       extra-libraries:  asound pthread jack
     if flag(alsa) && !flag(jack)
-      cxx-options:      -D__LINUX_ALSA__
+      cxx-options:      -std=c++11 -D__LINUX_ALSA__
       extra-libraries:  asound pthread
     if !flag(alsa) && flag(jack)
-      cxx-options:      -D__UNIX_JACK__
+      cxx-options:      -std=c++11 -D__UNIX_JACK__
       extra-libraries:  jack
 
   if os(darwin)
     if flag(jack)
-      cxx-options:      -D__MACOSX_CORE__ -D__UNIX_JACK__
+      cxx-options:      -std=c++11 -DTARGET_OS_IPHONE=0-D__MACOSX_CORE__ -D__UNIX_JACK__
       extra-libraries:  jack
     else
-      cxx-options:    -D__MACOSX_CORE__
+      cxx-options:    -std=c++11 -D__MACOSX_CORE__
     frameworks:       CoreMIDI CoreAudio CoreFoundation
     -- NOTE(ejconlon) This is to make the c ffi wrapper actually catch
     -- the c++ exceptions instead of simply aborting.
@@ -70,7 +70,7 @@ library
     ghc-options:       -pgmc=clang++
 
   if os(mingw32)
-    cxx-options:       -D__WINDOWS_MM__
+    cxx-options:       -std=c++11 -D__WINDOWS_MM__
     extra-libraries:   winmm
 
 executable rtmidi-callback

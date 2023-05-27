@@ -46,8 +46,8 @@ import Data.Coerce (coerce)
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
-import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, nullPtr, peekArray)
-import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, withCString)
+import Foreign (FunPtr, Ptr, Storable (..), alloca, allocaArray, allocaBytes, nullPtr, peekArray)
+import Foreign.C (CDouble (..), CInt (..), CSize, CString, CUChar (..), peekCString, peekCStringLen, withCString)
 import Foreign.ForeignPtr (ForeignPtr, newForeignPtr, withForeignPtr)
 import GHC.Generics (Generic)
 import Sound.RtMidi.Foreign
@@ -84,6 +84,10 @@ import Sound.RtMidi.Foreign
 -- However, sysex messages can be quite large, so you might have to use the 'getMessageSized' variant.
 defaultMessageSize :: Int
 defaultMessageSize = 4
+
+-- The max length of port names returned from 'rtmidi_get_port_name'
+maxPortNameLength :: Int
+maxPortNameLength = 256
 
 -- | Allows us to discriminate in/out functions in generic contexts
 data DeviceType
@@ -205,12 +209,15 @@ portCount d = withDevicePtr d $ \dptr -> do
 -- 'Nothing' is returned if an invalid port specifier is provided.
 portName :: IsDevice d => d -> Int -> IO (Maybe String)
 portName d n = withDevicePtrUnguarded d $ \dptr -> do
-  x <- rtmidi_get_port_name dptr (toEnum n)
-  guardError dptr
-  s <- peekCString x
-  case s of
-    [] -> pure Nothing
-    _ -> pure (Just s)
+  alloca $ \lenPtr -> do
+    poke lenPtr (fromIntegral maxPortNameLength)
+    allocaBytes maxPortNameLength $ \namePtr -> do
+      used <- rtmidi_get_port_name dptr (toEnum n) namePtr lenPtr
+      guardError dptr
+      s <- peekCStringLen (namePtr, fromIntegral used)
+      case s of
+        [] -> pure Nothing
+        _ -> pure (Just s)
 
 -- | Convenience function to list ports.
 --
