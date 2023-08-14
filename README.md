@@ -5,7 +5,7 @@ Haskell wrapper for [RtMidi](http://www.music.mcgill.ca/~gary/rtmidi/), the ligh
 ## Version
 
 The version of this library does not correspond to the RtMidi version (sorry). You can look at the `justfile` to see that we vendor sources
-from version `5.0.0`, and we apply a small patch to fix API names (`rtmidi.patch`).
+from version `6.0.0`.
 
 ## How to use
 

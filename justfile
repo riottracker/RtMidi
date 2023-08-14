@@ -1,7 +1,7 @@
 stack_build := "stack build --fast"
 src_dirs := "Sound test examples"
 
-rt_midi_url := "https://raw.githubusercontent.com/thestk/rtmidi/5.0.0"
+rt_midi_url := "https://raw.githubusercontent.com/thestk/rtmidi/6.0.0"
 
 # No default tasks
 default:
@@ -67,4 +67,3 @@ update-sources:
   curl --output rtmidi/RtMidi.h {{ rt_midi_url }}/RtMidi.h
   curl --output rtmidi/rtmidi_c.cpp {{ rt_midi_url }}/rtmidi_c.cpp
   curl --output rtmidi/rtmidi_c.h {{ rt_midi_url }}/rtmidi_c.h
-  git apply rtmidi.patch
