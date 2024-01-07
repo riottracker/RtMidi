@@ -57,7 +57,7 @@ library
 
   if os(darwin)
     if flag(jack)
-      cxx-options:      -std=c++11 -DTARGET_OS_IPHONE=0-D__MACOSX_CORE__ -D__UNIX_JACK__
+      cxx-options:      -std=c++11 -DTARGET_OS_IPHONE=0 -D__MACOSX_CORE__ -D__UNIX_JACK__
       extra-libraries:  jack
     else
       cxx-options:    -std=c++11 -D__MACOSX_CORE__
